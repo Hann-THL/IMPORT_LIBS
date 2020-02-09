@@ -22,7 +22,7 @@ def faststat(df):
     print('\n'.join(stats))
 
 # TODO - change to use plotly theme
-def figure(data, title=None, xlabel=None, ylabel=None, hovermode='x'):
+def figure(data, title=None, xlabel=None, ylabel=None, hovermode='x', showlegend=True):
     axis_dict = dict(
         title=xlabel,
         gridcolor='rgb(159, 197, 232)'
@@ -34,11 +34,11 @@ def figure(data, title=None, xlabel=None, ylabel=None, hovermode='x'):
                     for x in range(50)}
 
     layout = go.Layout(
-    	**xaxis_kwargs,
-    	**yaxis_kwargs,
+        **xaxis_kwargs,
+        **yaxis_kwargs,
         title = title,
         hovermode = hovermode,
-        showlegend = True,
+        showlegend = showlegend,
         legend_orientation = 'h',
         plot_bgcolor = 'rgba(0, 0, 0, 0)'
     )
@@ -51,8 +51,9 @@ def update_axis(fig, axis_count, gridcolor='rgb(159, 197, 232)'):
         fig['layout'][f'xaxis{suffix}']['gridcolor'] = gridcolor
         fig['layout'][f'yaxis{suffix}']['gridcolor'] = gridcolor
 
-def plot_graph(data, title, xlabel=None, ylabel=None, generate_file=True, out_path=None, layout_width=None, layout_height=None, hovermode='x'):
-    fig = figure(data, title, xlabel, ylabel, hovermode=hovermode)
+def plot_graph(data, title, xlabel=None, ylabel=None, generate_file=True, out_path=None,
+               layout_width=None, layout_height=None, hovermode='x', showlegend=True):
+    fig = figure(data, title, xlabel, ylabel, hovermode=hovermode, showlegend=showlegend)
     fig.update_layout(width=layout_width, height=layout_height)
 
     if generate_file:
@@ -144,6 +145,19 @@ def scatter(df, x_col, y_col, category_col=None, title='Scatter', out_path=None,
                 name = str(category)
             ))
     plot_graph(data, title=title, out_path=out_path, layout_width=layout_width, layout_height=layout_height, hovermode=None)
+    
+def bar(df, x_col, y_cols, title='Bar', out_path=None, layout_width=None, layout_height=None):
+    data = []
+    
+    for y_col in y_cols:
+        data.append(go.Bar(
+            x = df[x_col],
+            y = df[y_col]
+        ))
+
+    max_col = 2
+    subplot_titles = [f'{x.lower()}' for x in y_cols]
+    plot_subplots(data, max_col, title, subplot_titles=subplot_titles, out_path=out_path, layout_width=layout_width, layout_height=layout_height)
 
 def histogram(df, title='Histogram', out_path=None, layout_width=None, layout_height=None):
     data = []
