@@ -22,7 +22,7 @@ def faststat(df):
     print('\n'.join(stats))
 
 # TODO - change to use plotly theme
-def figure(data, title=None, xlabel=None, ylabel=None):
+def figure(data, title=None, xlabel=None, ylabel=None, hovermode='x'):
     axis_dict = dict(
         title=xlabel,
         gridcolor='rgb(159, 197, 232)'
@@ -37,10 +37,10 @@ def figure(data, title=None, xlabel=None, ylabel=None):
     	**xaxis_kwargs,
     	**yaxis_kwargs,
         title = title,
-        hovermode='x',
-        showlegend=True,
-        legend_orientation='h',
-        plot_bgcolor='rgba(0, 0, 0, 0)'
+        hovermode = hovermode,
+        showlegend = True,
+        legend_orientation = 'h',
+        plot_bgcolor = 'rgba(0, 0, 0, 0)'
     )
 
     return go.Figure(data=data, layout=layout)
@@ -51,8 +51,8 @@ def update_axis(fig, axis_count, gridcolor='rgb(159, 197, 232)'):
         fig['layout'][f'xaxis{suffix}']['gridcolor'] = gridcolor
         fig['layout'][f'yaxis{suffix}']['gridcolor'] = gridcolor
 
-def plot_graph(data, title, xlabel=None, ylabel=None, generate_file=True, out_path=None, layout_width=None, layout_height=None):
-    fig = figure(data, title, xlabel, ylabel)
+def plot_graph(data, title, xlabel=None, ylabel=None, generate_file=True, out_path=None, layout_width=None, layout_height=None, hovermode='x'):
+    fig = figure(data, title, xlabel, ylabel, hovermode=hovermode)
     fig.update_layout(width=layout_width, height=layout_height)
 
     if generate_file:
@@ -120,6 +120,31 @@ def datagroups_subplots(data_groups, max_col, title, subplot_titles=None, out_pa
     fig.update_layout(showlegend=showlegend, width=layout_width, height=layout_height, plot_bgcolor='rgba(0, 0, 0, 0)', barmode='overlay')
     generate_plot(fig, out_path=out_path, out_filename=title, axis_count=len(data_groups))
 
+def scatter(df, x_col, y_col, category_col=None, title='Scatter', out_path=None, layout_width=None, layout_height=None):
+    data = []
+    if category_col is None:
+        data.append(go.Scattergl(
+            x = df[x_col],
+            y = df[y_col],
+            mode = 'markers',
+            marker = {
+                'opacity': .5
+            }
+        ))
+    else:
+        for category in sorted(df[category_col].unique()):
+            tmp_df = df[df[category_col] == category]
+            data.append(go.Scattergl(
+                x = tmp_df[x_col],
+                y = tmp_df[y_col],
+                mode = 'markers',
+                marker = {
+                    'opacity': .5
+                },
+                name = str(category)
+            ))
+    plot_graph(data, title=title, out_path=out_path, layout_width=layout_width, layout_height=layout_height, hovermode=None)
+
 def histogram(df, title='Histogram', out_path=None, layout_width=None, layout_height=None):
     data = []
 
@@ -139,8 +164,8 @@ def boxplot(df, title='Box-Plot', out_path=None, layout_width=None, layout_heigh
     for column in columns:
         data.append(go.Box(
             y = df[column],
-            boxpoints='outliers', # all, outliers, suspectedoutliers
-            boxmean=True
+            boxpoints = 'outliers', # all, outliers, suspectedoutliers
+            boxmean = True
         ))
 
     max_col = 2
@@ -153,10 +178,10 @@ def violinplot(df, title='Violin-Plot', out_path=None, layout_width=None, layout
     columns = [k for k,v in df.dtypes.items() if 'float' in str(v) or 'int' in str(v)] if numeric_only else df.columns
     for column in columns:
         data.append(go.Violin(
-            y=df[column],
-            box_visible=True,
-            meanline_visible=True,
-            points='outliers' # all, outliers, suspectedoutliers
+            y = df[column],
+            box_visible = True,
+            meanline_visible = True,
+            points = 'outliers' # all, outliers, suspectedoutliers
         ))
 
     max_col = 2
@@ -171,7 +196,19 @@ def corrmatrix(df, title='Correlation Matrix', out_path=None, layout_width=None,
         x = corrmat.index,
         y = corrmat.columns,
         z = corrmat.values,
-        colorscale='RdBu'
+        colorscale = 'RdBu'
+    )
+    plot_graph(data, title=title, out_path=out_path, layout_width=layout_width, layout_height=layout_height)
+
+def heatmap(df, x_col, y_col, z_col, colorscale='RdBu', text=None, hoverinfo='all',
+            title='Heatmap', out_path=None, layout_width=None, layout_height=None):
+    data = go.Heatmap(
+        x = df[x_col],
+        y = df[y_col],
+        z = df[z_col],
+        colorscale = colorscale,
+        hoverinfo = hoverinfo,
+        text = text
     )
     plot_graph(data, title=title, out_path=out_path, layout_width=layout_width, layout_height=layout_height)
 
