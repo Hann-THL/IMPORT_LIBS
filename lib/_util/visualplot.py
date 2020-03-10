@@ -171,12 +171,14 @@ def histogram(df, title='Histogram', out_path=None, layout_width=None, layout_he
     subplot_titles = [f'{x.lower()}' for x in df.columns]
     plot_subplots(data, max_col, title, subplot_titles=subplot_titles, out_path=out_path, layout_width=layout_width, layout_height=layout_height)
 
-def boxplot(df, title='Box-Plot', out_path=None, layout_width=None, layout_height=None, numeric_only=True):
+def boxplot(df, x_col=None, title='Box-Plot', out_path=None, layout_width=None, layout_height=None, numeric_only=True):
     data = []
 
     columns = [k for k,v in df.dtypes.items() if 'float' in str(v) or 'int' in str(v)] if numeric_only else df.columns
+    columns = [x for x in columns if x != x_col]
     for column in columns:
         data.append(go.Box(
+            x = df[x_col],
             y = df[column],
             boxpoints = 'outliers', # all, outliers, suspectedoutliers
             boxmean = True
@@ -186,12 +188,14 @@ def boxplot(df, title='Box-Plot', out_path=None, layout_width=None, layout_heigh
     subplot_titles = [f'{x.lower()}' for x in columns]
     plot_subplots(data, max_col, title, subplot_titles=subplot_titles, out_path=out_path, layout_width=layout_width, layout_height=layout_height)
 
-def violinplot(df, title='Violin-Plot', out_path=None, layout_width=None, layout_height=None, numeric_only=True):
+def violinplot(df, x_col=None, title='Violin-Plot', out_path=None, layout_width=None, layout_height=None, numeric_only=True):
     data = []
 
     columns = [k for k,v in df.dtypes.items() if 'float' in str(v) or 'int' in str(v)] if numeric_only else df.columns
+    columns = [x for x in columns if x != x_col]
     for column in columns:
         data.append(go.Violin(
+            x = df[x_col],
             y = df[column],
             box_visible = True,
             meanline_visible = True,
