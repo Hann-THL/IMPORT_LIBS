@@ -241,7 +241,8 @@ def scatter(df, xy_tuples, title='Scatter', color=None,
                         layout_kwargs=layout_kwargs, to_image=to_image)
 
 def pair(df, title='Pair', color=None,
-         out_path=None, layout_kwargs={}, to_image=False):
+         out_path=None, layout_kwargs={}, to_image=False,
+         traces_kwargs={}):
     
     columns = df.select_dtypes(include='number')
     columns = [x for x in columns if x != color]
@@ -249,7 +250,7 @@ def pair(df, title='Pair', color=None,
 
     layout_kwargs['title'] = title
     fig.update_layout(**layout_kwargs)
-    fig.update_traces(diagonal_visible=False)
+    fig.update_traces(**traces_kwargs)
 
     generate_plot(fig, out_path=out_path, out_filename=title, to_image=to_image)
 
