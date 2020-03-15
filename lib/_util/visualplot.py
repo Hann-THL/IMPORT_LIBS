@@ -1,85 +1,57 @@
 import lib._util.fileproc as fp
 
 # Plotly
+import plotly.io as pio
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.colors import DEFAULT_PLOTLY_COLORS
 from plotly.subplots import make_subplots
 from plotly.offline import init_notebook_mode, iplot, plot
 init_notebook_mode(connected=True)
+pio.templates.default = 'seaborn'
 
 import numpy as np
+import statsmodels.api as sm
 
 def faststat(df):
-    na_count   = df.isna().sum()
-    na_percent = na_count / len(df) * 100
-    
-    stats = [f'{x[0][0] :<30} | {str(x[0][1]) :<15} | {x[1][1] :<10,.5f} | {x[2][1] :,}'
-             for x in zip(df.dtypes.items(), na_percent.items(), na_count.items())]
+    stat_df = df.isna().sum().to_frame(name='N/A Count')
+    stat_df['N/A Ratio'] = stat_df['N/A Count'] / len(df)
+    stat_df = stat_df.merge(df.dtypes.to_frame(name='Type'), left_index=True, right_index=True, how='left')
     
     print(df.shape)
-    print('Column                         | Type            | N/A %      | N/A Count')
-    print('-------------------------------------------------------------------------')
-    print('\n'.join(stats))
+    print(stat_df)
 
-# TODO - change to use plotly theme
-def figure(data, title=None, xlabel=None, ylabel=None, hovermode='x', showlegend=True):
-    axis_dict = dict(
-        title=xlabel,
-        gridcolor='rgb(159, 197, 232)'
-    )
-    xaxis_kwargs = {f'xaxis{x+1 if x != 0 else ""}': axis_dict
-                    for x in range(50)}
-    axis_dict['title'] = ylabel
-    yaxis_kwargs = {f'yaxis{x+1 if x != 0 else ""}': axis_dict
-                    for x in range(50)}
+def value_count(df, column):
+    count_df = df[column].value_counts().to_frame(name='Count')
+    ratio_df = df[column].value_counts(normalize=True).to_frame(name='Ratio')
+    stat_df  = count_df.merge(ratio_df, left_index=True, right_index=True, how='left')
+    stat_df.index.name = column
+    
+    print(stat_df)
 
-    layout = go.Layout(
-        **xaxis_kwargs,
-        **yaxis_kwargs,
-        title = title,
-        hovermode = hovermode,
-        showlegend = showlegend,
-        legend_orientation = 'h',
-        plot_bgcolor = 'rgba(0, 0, 0, 0)'
-    )
-
-    return go.Figure(data=data, layout=layout)
-
-def update_axis(fig, axis_count, gridcolor='rgb(159, 197, 232)'):
-    for x in range(axis_count):
-        suffix = x+1 if x != 0 else ''
-        fig['layout'][f'xaxis{suffix}']['gridcolor'] = gridcolor
-        fig['layout'][f'yaxis{suffix}']['gridcolor'] = gridcolor
-
-def plot_graph(data, title, xlabel=None, ylabel=None, generate_file=True, out_path=None,
-               layout_width=None, layout_height=None, hovermode='x', showlegend=True):
-    fig = figure(data, title, xlabel, ylabel, hovermode=hovermode, showlegend=showlegend)
-    fig.update_layout(width=layout_width, height=layout_height)
-
-    if generate_file:
-        generate_plot(fig, out_path, title)
-    else:
-        generate_plot(fig)
-
-def generate_plot(fig, out_path=None, out_filename=None, axis_count=None):
-    if axis_count is not None:
-        update_axis(fig, axis_count)
-
+def generate_plot(fig, out_path=None, out_filename=None, to_image=False):
     if out_path is None or out_filename is None:
         iplot(fig)
     else:
         fp.create_directory(out_path)
         out_filename = f'{out_filename}.html' if '.html' not in out_filename else out_filename
         out_file     = f'{out_path}{out_filename}'
-        plot(fig, filename=out_file, auto_open=False)
+
+        if to_image:
+            out_file = out_file.replace('.html', '.png')
+            fig.write_image(out_file)
+        else:
+            plot(fig, filename=out_file, auto_open=False)
         
         print(f'Generated: {out_file}')
 
-def plot_subplots(data, max_col, title, subplot_titles=None, out_path=None, showlegend=False, layout_width=None, layout_height=None):
-    max_row = int(np.ceil(len(data) / max_col))
-    
-    fig = make_subplots(rows=max_row, cols=max_col, subplot_titles=subplot_titles, x_title=title)
+def plot_subplots(data, max_col, title,
+                  out_path=None, to_image=False,
+                  layout_kwargs={}, xaxis_titles=[], yaxis_titles=[]):
 
+    max_row = int(np.ceil(len(data) / max_col))
+    fig     = make_subplots(rows=max_row, cols=max_col)
+    
     for index, trace in enumerate(data):
         col = index +1
 
@@ -95,14 +67,31 @@ def plot_subplots(data, max_col, title, subplot_titles=None, out_path=None, show
 
         fig.add_trace(trace, row=row, col=col)
 
-    fig.update_layout(showlegend=showlegend, width=layout_width, height=layout_height, plot_bgcolor='rgba(0, 0, 0, 0)')
-    generate_plot(fig, out_path=out_path, out_filename=title, axis_count=len(data))
-
-def datagroups_subplots(data_groups, max_col, title, subplot_titles=None, out_path=None, showlegend=False, layout_width=None, layout_height=None):
-    max_row = int(np.ceil(len(data_groups) / max_col))
+        # Update axis label
+        axisnum = '' if index == 0 else index +1
+        try:
+            fig['layout'][f'xaxis{axisnum}']['title'] = xaxis_titles[index]
+        except IndexError:
+            fig['layout'][f'xaxis{axisnum}']['title'] = trace['name']
+            
+        try:
+            fig['layout'][f'yaxis{axisnum}']['title'] = yaxis_titles[index]
+        except IndexError:
+            pass
     
-    fig = make_subplots(rows=max_row, cols=max_col, subplot_titles=subplot_titles, x_title=title)
-    for index, data_group in enumerate(data_groups):
+    layout_kwargs['title'] = title
+    fig.update_layout(**layout_kwargs)
+    
+    generate_plot(fig, out_path=out_path, out_filename=title, to_image=to_image)
+
+def datagroups_subplots(data_groups, max_col, title,
+                        out_path=None, to_image=False,
+                        layout_kwargs={}, xaxis_titles=[], yaxis_titles=[]):
+
+    max_row = int(np.ceil(len(data_groups) / max_col))
+    fig     = make_subplots(rows=max_row, cols=max_col)
+
+    for index, data in enumerate(data_groups):
         col = index +1
 
         if col <= max_col:
@@ -115,126 +104,177 @@ def datagroups_subplots(data_groups, max_col, title, subplot_titles=None, out_pa
             elif col == 1:
                 row += 1
 
-        for data in data_group:
-            fig.add_trace(data, row=row, col=col)
+        for trace in data:
+            fig.add_trace(trace, row=row, col=col)
 
-    fig.update_layout(showlegend=showlegend, width=layout_width, height=layout_height, plot_bgcolor='rgba(0, 0, 0, 0)', barmode='overlay')
-    generate_plot(fig, out_path=out_path, out_filename=title, axis_count=len(data_groups))
+        # Update axis label
+        axisnum = '' if index == 0 else index +1
+        try:
+            fig['layout'][f'xaxis{axisnum}']['title'] = xaxis_titles[index]
+        except IndexError:
+            pass
+            
+        try:
+            fig['layout'][f'yaxis{axisnum}']['title'] = yaxis_titles[index]
+        except IndexError:
+            pass
+            
+    layout_kwargs['title'] = title
+    fig.update_layout(**layout_kwargs)
 
-def scatter(df, x_col, y_col, category_col=None, title='Scatter', out_path=None, layout_width=None, layout_height=None):
-    data = []
-    if category_col is None:
-        data.append(go.Scattergl(
-            x = df[x_col],
-            y = df[y_col],
-            mode = 'markers',
-            marker = {
-                'opacity': .5
-            }
-        ))
-    else:
-        for category in sorted(df[category_col].unique()):
-            tmp_df = df[df[category_col] == category]
-            data.append(go.Scattergl(
-                x = tmp_df[x_col],
-                y = tmp_df[y_col],
-                mode = 'markers',
-                marker = {
-                    'opacity': .5
-                },
-                name = str(category)
-            ))
-    plot_graph(data, title=title, out_path=out_path, layout_width=layout_width, layout_height=layout_height, hovermode=None)
+    generate_plot(fig, out_path=out_path, out_filename=title, to_image=to_image)
+
+def histogram(df, title='Histogram',
+              out_path=None, max_col=2, layout_kwargs={}, to_image=False,
+              bin_algo='default'):
+
+    bin_algos = ['default', 'count', 'width']
+    assert bin_algo in bin_algos, f'bin_algo not in valid list: {bin_algos}'
+
+    data    = []
+    colors  = DEFAULT_PLOTLY_COLORS
+    columns = df.columns
     
-def bar(df, x_col, y_cols, title='Bar', out_path=None, layout_width=None, layout_height=None):
-    data = []
-    
-    for y_col in y_cols:
-        data.append(go.Bar(
-            x = df[x_col],
-            y = df[y_col]
-        ))
+    for column in columns:
+        try:
+            # https://www.qimacros.com/histogram-excel/how-to-determine-histogram-bin-interval/
+            n_data = len(np.unique(df[column]))
+            n_bins = int(np.ceil(np.sqrt(n_data)))
+            width  = (df[column].max() - df[column].min()) / n_bins
 
-    max_col = 2
-    subplot_titles = [f'{x.lower()}' for x in y_cols]
-    plot_subplots(data, max_col, title, subplot_titles=subplot_titles, out_path=out_path, layout_width=layout_width, layout_height=layout_height)
+            nbinsx = n_bins if bin_algo == 'count' else None
+            xbins  = {'size': width} if bin_algo == 'width' else None
 
-def histogram(df, title='Histogram', out_path=None, layout_width=None, layout_height=None):
-    data = []
+        except TypeError:
+            nbinsx = None
+            xbins  = None
 
-    for column in df.columns:
         data.append(go.Histogram(
-            x = df[column]
+            x=df[column],
+            name=column,
+            showlegend=False,
+            nbinsx=nbinsx,
+            xbins=xbins,
+            marker={'color': colors[0]}
         ))
+        
+    plot_subplots(data, max_col=max_col, title=title, out_path=out_path,
+                  layout_kwargs=layout_kwargs, to_image=to_image)
 
-    max_col = 2
-    subplot_titles = [f'{x.lower()}' for x in df.columns]
-    plot_subplots(data, max_col, title, subplot_titles=subplot_titles, out_path=out_path, layout_width=layout_width, layout_height=layout_height)
+def kde(df, title='KDE', color=None,
+        out_path=None, max_col=2, layout_kwargs={}, to_image=False):
+    
+    columns = df.select_dtypes(include='number')
+    columns = [x for x in columns if x != color]
 
-def boxplot(df, x_col=None, title='Box-Plot', out_path=None, layout_width=None, layout_height=None, numeric_only=True):
-    data = []
+    data_groups = []
+    groups      = [1] if color is None else np.unique(df[color])
 
-    columns = [k for k,v in df.dtypes.items() if 'float' in str(v) or 'int' in str(v)] if numeric_only else df.columns
-    columns = [x for x in columns if x != x_col]
     for column in columns:
-        data.append(go.Box(
-            x = df[x_col],
-            y = df[column],
-            boxpoints = 'outliers', # all, outliers, suspectedoutliers
-            boxmean = True
-        ))
+        data   = []
+        colors = DEFAULT_PLOTLY_COLORS
 
-    max_col = 2
-    subplot_titles = [f'{x.lower()}' for x in columns]
-    plot_subplots(data, max_col, title, subplot_titles=subplot_titles, out_path=out_path, layout_width=layout_width, layout_height=layout_height)
+        for index, group in enumerate(groups):
+            tmp_df = df if color is None else df[df[color] == group]
+            kde    = sm.nonparametric.KDEUnivariate(tmp_df[column].astype('float'))
+            kde.fit()
+            
+            data.append(go.Scattergl(
+                x=kde.support,
+                y=kde.density,
+                name=column if color is None else f'{column}: {group}',
+                marker={'color': colors[index % len(colors)]}
+            ))
+        data_groups.append(data)
 
-def violinplot(df, x_col=None, title='Violin-Plot', out_path=None, layout_width=None, layout_height=None, numeric_only=True):
-    data = []
+    if color is None:
+        layout_kwargs['showlegend'] = False
 
-    columns = [k for k,v in df.dtypes.items() if 'float' in str(v) or 'int' in str(v)] if numeric_only else df.columns
-    columns = [x for x in columns if x != x_col]
+    datagroups_subplots(data_groups, max_col=max_col, title=title, out_path=out_path,
+                        xaxis_titles=columns,
+                        layout_kwargs=layout_kwargs, to_image=to_image)
+
+def box(df, title='Box', color=None,
+        out_path=None, max_col=2, layout_kwargs={}, to_image=False):
+
+    columns = df.select_dtypes(include='number')
+    columns = [x for x in columns if x != color]
+
+    data_groups = []
+    groups      = [1] if color is None else np.unique(df[color])
+
     for column in columns:
-        data.append(go.Violin(
-            x = df[x_col],
-            y = df[column],
-            box_visible = True,
-            meanline_visible = True,
-            points = 'outliers' # all, outliers, suspectedoutliers
-        ))
+        data   = []
+        colors = DEFAULT_PLOTLY_COLORS
 
-    max_col = 2
-    subplot_titles = [f'{x.lower()}' for x in columns]
-    plot_subplots(data, max_col, title, subplot_titles=subplot_titles, out_path=out_path, layout_width=layout_width, layout_height=layout_height)
+        for index, group in enumerate(groups):
+            data.append(go.Box(
+                y=df[column] if color is None else df[df[color] == group][column],
+                name=column if color is None else f'{column}: {group}',
+                marker={'color': colors[index % len(colors)]}
+            ))
+        data_groups.append(data)
 
-def corrmatrix(df, title='Correlation Matrix', out_path=None, layout_width=None, layout_height=None):
-    corrmat = df.corr()
-    corrmat = corrmat.where(np.tril(np.ones(corrmat.shape), k=-1).astype(np.bool))
+    if color is None:
+        layout_kwargs['showlegend'] = False
 
+    datagroups_subplots(data_groups, max_col=max_col, title=title, out_path=out_path,
+                        yaxis_titles=columns,
+                        layout_kwargs=layout_kwargs, to_image=to_image)
+
+def scatter(df, xy_tuples, title='Scatter', color=None,
+            out_path=None, max_col=2, layout_kwargs={}, to_image=False,
+            scatter_kwargs={}):
+
+    data_groups = []
+    for index, (x, y) in enumerate(xy_tuples):
+        fig = px.scatter(df, x=x, y=y, color=color, **scatter_kwargs)
+
+        if index != 0:
+            for data in fig['data']:
+                data['showlegend'] = False
+        data_groups.append(fig['data'])
+        
+    datagroups_subplots(data_groups, max_col=max_col, title=title, out_path=out_path,
+                        xaxis_titles=[xy[0] for xy in xy_tuples],
+                        yaxis_titles=[xy[1] for xy in xy_tuples],
+                        layout_kwargs=layout_kwargs, to_image=to_image)
+
+def pair(df, title='Pair', color=None,
+         out_path=None, layout_kwargs={}, to_image=False):
+    
+    columns = df.select_dtypes(include='number')
+    columns = [x for x in columns if x != color]
+    fig     = px.scatter_matrix(df, dimensions=columns, color=color)
+
+    layout_kwargs['title'] = title
+    fig.update_layout(**layout_kwargs)
+    fig.update_traces(diagonal_visible=False)
+
+    generate_plot(fig, out_path=out_path, out_filename=title, to_image=to_image)
+
+def corrmat(df, title='Heatmap',
+            out_path=None, layout_kwargs={}, to_image=False,
+            heatmap_kwargs={}, matrix_type='default', absolute=False):
+
+    matrix_types = ['default', 'upper', 'lower']
+    assert matrix_type in matrix_types, f'matrix_type not in valid list: {matrix_types}'
+
+    corr_df  = df.corr().abs() if absolute else df.corr()
+    upper_df = corr_df.where(np.triu(np.ones(corr_df.shape), k=0).astype(np.bool))
+    lower_df = corr_df.where(np.tril(np.ones(corr_df.shape), k=0).astype(np.bool))
+
+    heatmap_df = upper_df if matrix_type == 'upper' else lower_df if matrix_type == 'lower' else corr_df
     data = go.Heatmap(
-        x = corrmat.index,
-        y = corrmat.columns,
-        z = corrmat.values,
-        colorscale = 'RdBu'
+        x=heatmap_df.columns,
+        y=heatmap_df.index,
+        z=heatmap_df.values,
+        transpose=True,
+        **heatmap_kwargs
     )
-    plot_graph(data, title=title, out_path=out_path, layout_width=layout_width, layout_height=layout_height)
+    fig = go.Figure(data=data)
 
-def heatmap(df, x_col, y_col, z_col, colorscale='RdBu', text=None, hoverinfo='all',
-            title='Heatmap', out_path=None, layout_width=None, layout_height=None):
-    data = go.Heatmap(
-        x = df[x_col],
-        y = df[y_col],
-        z = df[z_col],
-        colorscale = colorscale,
-        hoverinfo = hoverinfo,
-        text = text
-    )
-    plot_graph(data, title=title, out_path=out_path, layout_width=layout_width, layout_height=layout_height)
+    layout_kwargs['title'] = title
+    fig.update_layout(**layout_kwargs)
 
-def pairplot(df, title='Pair-Plot', out_path=None, layout_width=None, layout_height=None, numeric_only=True, category=None):
-    columns = [k for k,v in df.dtypes.items() if 'float' in str(v) or 'int' in str(v)] if numeric_only else df.columns
-
-    fig = px.scatter_matrix(df, dimensions=columns, color=category, title=title, opacity=.5)
-
-    fig.update_layout(width=layout_width, height=layout_height)
-    fig.update_traces(diagonal_visible=False, showupperhalf=False)
-    generate_plot(fig, out_path=out_path, out_filename=title)
+    generate_plot(fig, out_path=out_path, out_filename=title, to_image=to_image)
