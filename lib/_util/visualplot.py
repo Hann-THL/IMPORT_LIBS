@@ -150,7 +150,7 @@ def histogram(df, title='Histogram',
             xbins  = None
 
         data.append(go.Histogram(
-            x=df[column],
+            x=df[column].sort_values(),
             name=column,
             showlegend=False,
             nbinsx=nbinsx,
@@ -210,7 +210,7 @@ def box(df, title='Box', color=None,
         for index, group in enumerate(groups):
             data.append(go.Box(
                 y=df[column] if color is None else df[df[color] == group][column],
-                name=column if color is None else f'{column}: {group}',
+                name=column if color is None else group,
                 marker={'color': colors[index % len(colors)]}
             ))
         data_groups.append(data)
@@ -219,7 +219,7 @@ def box(df, title='Box', color=None,
         layout_kwargs['showlegend'] = False
 
     datagroups_subplots(data_groups, max_col=max_col, title=title, out_path=out_path,
-                        yaxis_titles=columns,
+                        yaxis_titles=[] if color is None else columns,
                         layout_kwargs=layout_kwargs, to_image=to_image)
 
 def scatter(df, xy_tuples, title='Scatter', color=None,
@@ -254,7 +254,24 @@ def pair(df, title='Pair', color=None,
 
     generate_plot(fig, out_path=out_path, out_filename=title, to_image=to_image)
 
-def corrmat(df, title='Heatmap',
+def heatmap(x, y, z, title='Heatmap',
+            out_path=None, layout_kwargs={}, to_image=False,
+            heatmap_kwargs={}):
+
+    data = go.Heatmap(
+        x=x,
+        y=y,
+        z=z,
+        **heatmap_kwargs
+    )
+    fig = go.Figure(data=data)
+
+    layout_kwargs['title'] = title
+    fig.update_layout(**layout_kwargs)
+
+    generate_plot(fig, out_path=out_path, out_filename=title, to_image=to_image)
+
+def corrmat(df, title='Correlation Matrix',
             out_path=None, layout_kwargs={}, to_image=False,
             heatmap_kwargs={}, matrix_type='default', absolute=False):
 
@@ -266,16 +283,15 @@ def corrmat(df, title='Heatmap',
     lower_df = corr_df.where(np.tril(np.ones(corr_df.shape), k=0).astype(np.bool))
 
     heatmap_df = upper_df if matrix_type == 'upper' else lower_df if matrix_type == 'lower' else corr_df
-    data = go.Heatmap(
+    heatmap_kwargs['transpose'] = True
+
+    heatmap(
         x=heatmap_df.columns,
         y=heatmap_df.index,
         z=heatmap_df.values,
-        transpose=True,
-        **heatmap_kwargs
+        layout_kwargs=layout_kwargs,
+        heatmap_kwargs=heatmap_kwargs,
+        title=title,
+        out_path=out_path,
+        to_image=to_image
     )
-    fig = go.Figure(data=data)
-
-    layout_kwargs['title'] = title
-    fig.update_layout(**layout_kwargs)
-
-    generate_plot(fig, out_path=out_path, out_filename=title, to_image=to_image)
