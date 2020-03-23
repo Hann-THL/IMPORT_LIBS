@@ -47,10 +47,10 @@ def generate_plot(fig, out_path=None, out_filename=None, to_image=False):
 
 def plot_subplots(data, max_col, title,
                   out_path=None, to_image=False,
-                  layout_kwargs={}, xaxis_titles=[], yaxis_titles=[]):
+                  layout_kwargs={}, xaxis_titles=[], yaxis_titles=[], subplot_titles=[]):
 
     max_row = int(np.ceil(len(data) / max_col))
-    fig     = make_subplots(rows=max_row, cols=max_col)
+    fig     = make_subplots(rows=max_row, cols=max_col, subplot_titles=subplot_titles)
     
     for index, trace in enumerate(data):
         col = index +1
@@ -89,10 +89,10 @@ def plot_subplots(data, max_col, title,
 
 def datagroups_subplots(data_groups, max_col, title,
                         out_path=None, to_image=False,
-                        layout_kwargs={}, xaxis_titles=[], yaxis_titles=[]):
+                        layout_kwargs={}, xaxis_titles=[], yaxis_titles=[], subplot_titles=[]):
 
     max_row = int(np.ceil(len(data_groups) / max_col))
-    fig     = make_subplots(rows=max_row, cols=max_col)
+    fig     = make_subplots(rows=max_row, cols=max_col, subplot_titles=subplot_titles)
 
     for index, data in enumerate(data_groups):
         col = index +1
