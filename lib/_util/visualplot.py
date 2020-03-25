@@ -11,6 +11,7 @@ init_notebook_mode(connected=True)
 pio.templates.default = 'seaborn'
 
 import numpy as np
+import pandas as pd
 import statsmodels.api as sm
 
 def faststat(df):
@@ -109,7 +110,7 @@ def datagroups_subplots(data_groups, max_col, title,
 
         if max_col == 1:
             row = index +1
-
+            
         for trace in data:
             fig.add_trace(trace, row=row, col=col)
 
@@ -130,6 +131,9 @@ def datagroups_subplots(data_groups, max_col, title,
 
     generate_plot(fig, out_path=out_path, out_filename=title, to_image=to_image)
 
+
+
+# BASIC
 def histogram(df, title='Histogram',
               out_path=None, max_col=2, layout_kwargs={}, to_image=False,
               bin_algo='default'):
@@ -301,3 +305,84 @@ def corrmat(df, title='Correlation Matrix',
         out_path=out_path,
         to_image=to_image
     )
+
+
+
+# AUDIO PROCESSING
+def wave(df, amplitude, title='Wave',
+         out_path=None, max_col=2, layout_kwargs={}, to_image=False):
+    
+    new_df = df.copy()
+    new_df.rename(columns={amplitude: 'WAVE_AMPLITUDE'}, inplace=True)
+
+    data_groups = []
+    for row in new_df.itertuples():
+        tmp_df = pd.DataFrame({
+            'WAVE_AMPLITUDE': row.WAVE_AMPLITUDE
+        })
+        
+        fig = px.line(tmp_df, y='WAVE_AMPLITUDE')
+        data_groups.append(fig['data'])
+
+    xaxis_titles = 'Time (' + (new_df['rate'].astype(int).astype(str) + ' Hz/s').values + ')' \
+                   if 'rate' in new_df.columns else ['Time' for _ in new_df.index]
+    yaxis_titles = ['Amplitude' if i % max_col == 0 else '' for i,_ in enumerate(new_df.index)]
+
+    datagroups_subplots(data_groups, max_col=max_col, title=title, out_path=out_path,
+                        subplot_titles=new_df.index,
+                        xaxis_titles=xaxis_titles,
+                        yaxis_titles=yaxis_titles,
+                        layout_kwargs=layout_kwargs, to_image=to_image)
+
+def fourier(df, frequency, magnitude, title='FT', x_title='Frequency',
+            out_path=None, max_col=2, layout_kwargs={}, to_image=False):
+    
+    new_df = df.copy()
+    new_df.rename(columns={
+        frequency: 'FT_FREQUENCY',
+        magnitude: 'FT_MAGNITUDE'
+    }, inplace=True)
+
+    data_groups = []
+    for row in new_df.itertuples():
+        tmp_df = pd.DataFrame({
+            'FT_FREQUENCY': row.FT_FREQUENCY,
+            'FT_MAGNITUDE': row.FT_MAGNITUDE
+        })
+        
+        fig = px.line(tmp_df, x='FT_FREQUENCY', y='FT_MAGNITUDE')
+        data_groups.append(fig['data'])
+
+    xaxis_titles = [x_title for _ in new_df.index]
+    yaxis_titles = ['Magnitude' if i % max_col == 0 else '' for i,_ in enumerate(new_df.index)]
+
+    datagroups_subplots(data_groups, max_col=max_col, title=title, out_path=out_path,
+                        subplot_titles=new_df.index,
+                        xaxis_titles=xaxis_titles,
+                        yaxis_titles=yaxis_titles,
+                        layout_kwargs=layout_kwargs, to_image=to_image)
+
+def spectogram(df, z, title='Spectogram', y_title='Frequency',
+               out_path=None, max_col=2, layout_kwargs={}, to_image=False):
+    
+    new_df = df.copy()
+    new_df.rename(columns={z: 'SPECTOGRAM_Z'}, inplace=True)
+
+    data_groups = []
+    for row in new_df.itertuples():
+        data = go.Heatmap(
+            z=row.SPECTOGRAM_Z,
+            showscale=False
+        )
+        fig = go.Figure(data=data)
+
+        data_groups.append(fig['data'])
+
+    xaxis_titles = ['Time' for _ in new_df.index]
+    yaxis_titles = [y_title if i % max_col == 0 else '' for i,_ in enumerate(new_df.index)]
+
+    datagroups_subplots(data_groups, max_col=max_col, title=title, out_path=out_path,
+                        subplot_titles=new_df.index,
+                        xaxis_titles=xaxis_titles,
+                        yaxis_titles=yaxis_titles,
+                        layout_kwargs=layout_kwargs, to_image=to_image)
