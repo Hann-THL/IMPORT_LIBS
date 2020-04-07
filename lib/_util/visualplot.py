@@ -10,17 +10,21 @@ from plotly.offline import init_notebook_mode, iplot, plot
 init_notebook_mode(connected=True)
 pio.templates.default = 'seaborn'
 
-import numpy as np
 import pandas as pd
+import numpy as np
 import statsmodels.api as sm
+from scipy.stats import linregress
 
-def faststat(df):
+def faststat(df, max_rows=None):
     stat_df = df.isna().sum().to_frame(name='N/A Count')
     stat_df['N/A Ratio'] = stat_df['N/A Count'] / len(df)
     stat_df = stat_df.merge(df.dtypes.to_frame(name='Type'), left_index=True, right_index=True, how='left')
     
+    default_max_rows = pd.options.display.max_rows
+    pd.set_option('display.max_rows', max_rows)
     print(df.shape)
     print(stat_df)
+    pd.set_option('display.max_rows', default_max_rows)
 
 def value_count(df, column):
     count_df = df[column].value_counts().to_frame(name='Count')
@@ -48,7 +52,7 @@ def generate_plot(fig, out_path=None, out_filename=None, to_image=False):
 
 def plot_subplots(data, max_col, title,
                   out_path=None, to_image=False,
-                  layout_kwargs={}, xaxis_titles=[], yaxis_titles=[], subplot_titles=[]):
+                  layout_kwargs={}, xaxis_titles=[], yaxis_titles=[], subplot_titles=None):
 
     max_row = int(np.ceil(len(data) / max_col))
     fig     = make_subplots(rows=max_row, cols=max_col, subplot_titles=subplot_titles)
@@ -65,9 +69,6 @@ def plot_subplots(data, max_col, title,
                 col = max_col
             elif col == 1:
                 row += 1
-
-        if max_col == 1:
-            row = index +1
 
         fig.add_trace(trace, row=row, col=col)
 
@@ -90,7 +91,7 @@ def plot_subplots(data, max_col, title,
 
 def datagroups_subplots(data_groups, max_col, title,
                         out_path=None, to_image=False,
-                        layout_kwargs={}, xaxis_titles=[], yaxis_titles=[], subplot_titles=[]):
+                        layout_kwargs={}, xaxis_titles=[], yaxis_titles=[], subplot_titles=None):
 
     max_row = int(np.ceil(len(data_groups) / max_col))
     fig     = make_subplots(rows=max_row, cols=max_col, subplot_titles=subplot_titles)
@@ -108,9 +109,6 @@ def datagroups_subplots(data_groups, max_col, title,
             elif col == 1:
                 row += 1
 
-        if max_col == 1:
-            row = index +1
-            
         for trace in data:
             fig.add_trace(trace, row=row, col=col)
 
@@ -237,17 +235,31 @@ def scatter(df, xy_tuples, title='Scatter', color=None,
             scatter_kwargs={}):
 
     data_groups = []
+    r_values    = []
+    p_values    = []
+    trendline   = False if scatter_kwargs.get('trendline') is None else True
+
     for index, (x, y) in enumerate(xy_tuples):
         fig = px.scatter(df, x=x, y=y, color=color, **scatter_kwargs)
+
+        if trendline:
+            slope, intercept, r_value, p_value, std_err = linregress(df[x], df[y])
+            r_values.append(r_value)
+            p_values.append(p_value)
 
         if index != 0:
             for data in fig['data']:
                 data['showlegend'] = False
         data_groups.append(fig['data'])
         
+    # Reference: https://www.dummies.com/education/math/statistics/what-a-p-value-tells-you-about-statistical-data/
+    # p-value lesser than 0.05 indicates strong evidence against null hypothesis
+    subplot_titles = [f'r2: {r2 :.6f} | p: {p_values[i] :.3f}' for i,r2 in enumerate(np.square(r_values))] if trendline else None
+    
     datagroups_subplots(data_groups, max_col=max_col, title=title, out_path=out_path,
                         xaxis_titles=[xy[0] for xy in xy_tuples],
                         yaxis_titles=[xy[1] for xy in xy_tuples],
+                        subplot_titles=subplot_titles,
                         layout_kwargs=layout_kwargs, to_image=to_image)
 
 def pair(df, title='Pair', color=None,
