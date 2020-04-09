@@ -230,6 +230,30 @@ def box(df, title='Box', color=None,
                         yaxis_titles=[] if color is None else columns,
                         layout_kwargs=layout_kwargs, to_image=to_image)
 
+def box_categorical(df, y, title='Box',
+                    out_path=None, max_col=2, layout_kwargs={}, to_image=False):
+
+    columns = df.select_dtypes(include='object')
+    columns = [x for x in columns if x != y]
+
+    data_groups = []
+    for column in columns:
+        median_df = df.groupby(column).agg(
+            BOX_CATEGORICAL_median=(y, 'median')
+        ).reset_index().sort_values(by='BOX_CATEGORICAL_median')
+
+        tmp_df = df[[column, y]].copy()
+        tmp_df = tmp_df.merge(median_df, on=column, how='left')
+        tmp_df = tmp_df.sort_values(by='BOX_CATEGORICAL_median')
+
+        fig = px.box(tmp_df, x=column, y=y)
+        data_groups.append(fig['data'])
+
+    datagroups_subplots(data_groups, max_col=max_col, title=title, out_path=out_path,
+                        xaxis_titles=columns,
+                        yaxis_titles=[y if i % max_col == 0 else None for i,_ in enumerate(columns)],
+                        layout_kwargs=layout_kwargs, to_image=to_image)
+
 def scatter(df, xy_tuples, title='Scatter', color=None,
             out_path=None, max_col=2, layout_kwargs={}, to_image=False,
             scatter_kwargs={}):
