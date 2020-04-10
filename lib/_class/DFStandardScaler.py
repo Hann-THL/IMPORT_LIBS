@@ -14,17 +14,17 @@ class DFStandardScaler(BaseEstimator, TransformerMixin):
         self.model.fit(X[self.transform_cols])
     
     def transform(self, X):
-        new_df = X.copy()
-        new_df[self.transform_cols] = self.model.transform(X[self.transform_cols])
+        new_X = X.copy()
+        new_X[self.transform_cols] = self.model.transform(X[self.transform_cols])
 
-        return new_df
+        return new_X
     
     def fit_transform(self, X, y=None):
         self.fit(X)
         return self.transform(X)
     
     def inverse_transform(self, X):
-        new_df = X.copy()
-        new_df[self.transform_cols] = self.model.inverse_transform(X[self.transform_cols])
+        new_X = X.copy()
+        new_X[self.transform_cols] = self.model.inverse_transform(X[self.transform_cols])
 
-        return new_df
+        return new_X
