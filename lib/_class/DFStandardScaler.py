@@ -5,7 +5,7 @@ import pandas as pd
 class DFStandardScaler(BaseEstimator, TransformerMixin):
     def __init__(self, columns=None, **kwargs):
         self.columns        = columns
-        self.transform_cols = []
+        self.transform_cols = None
         self.model          = StandardScaler(**kwargs)
         
     def fit(self, X, y=None):
@@ -14,6 +14,9 @@ class DFStandardScaler(BaseEstimator, TransformerMixin):
         self.model.fit(X[self.transform_cols])
     
     def transform(self, X):
+        if self.transform_cols is None:
+            raise NotFittedError(f"This {self.__class__.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.")
+
         new_X = X.copy()
         new_X[self.transform_cols] = self.model.transform(X[self.transform_cols])
 
@@ -24,6 +27,9 @@ class DFStandardScaler(BaseEstimator, TransformerMixin):
         return self.transform(X)
     
     def inverse_transform(self, X):
+        if self.transform_cols is None:
+            raise NotFittedError(f"This {self.__class__.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.")
+
         new_X = X.copy()
         new_X[self.transform_cols] = self.model.inverse_transform(X[self.transform_cols])
 

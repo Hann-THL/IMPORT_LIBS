@@ -5,8 +5,8 @@ import pandas as pd
 class DFOrdinalEncoder(BaseEstimator, TransformerMixin):
     def __init__(self, mapper_dict, concat_symbol='|'):
         self.mapper_dict           = mapper_dict
-        self.transform_mapper_dict = None
         self.concat_symbol         = concat_symbol
+        self.transform_mapper_dict = None
         
     def fit(self, X, y=None):
         self.transform_mapper_dict = {k: v for k,v in self.mapper_dict.items() if k in X.columns}
