@@ -47,7 +47,7 @@ class DFBoxCoxTransformer(BaseEstimator, TransformerMixin):
         return self.transform(X)
     
     def inverse_transform(self, X):
-    	if self.transform_cols is None:
+        if self.transform_cols is None:
             raise NotFittedError(f"This {self.__class__.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.")
 
         new_X = X.copy()
