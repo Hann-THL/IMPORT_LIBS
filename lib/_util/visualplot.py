@@ -13,7 +13,7 @@ pio.templates.default = 'seaborn'
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm
-from scipy.stats import linregress
+from scipy.stats import linregress, probplot
 
 def faststat(df, max_rows=None):
     stat_df = df.isna().sum().to_frame(name='N/A Count')
@@ -294,8 +294,8 @@ def bar_mean_median(df, y, title='Bar - Mean-Median',
                         layout_kwargs=layout_kwargs, to_image=to_image)
 
 # Reference: https://stackoverflow.com/questions/51170553/qq-plot-using-plotly-in-python
-def qq(df, title='QQ',
-       out_path=None, max_col=2, layout_kwargs={}, to_image=False):
+def prob(df, title='Probability',
+         out_path=None, max_col=2, layout_kwargs={}, to_image=False):
     
     columns     = df.select_dtypes(include='number')
     data_groups = []
