@@ -24,6 +24,8 @@ class DFRegressionThreshold(BaseEstimator, TransformerMixin):
             self.stat_df.at[row.Index, 'r_value'] = r_value
             self.stat_df.at[row.Index, 'p_value'] = p_value
         self.stat_df['r2'] = np.square(self.stat_df['r_value'])
+
+        return self
     
     def transform(self, X):
         if self.stat_df is None:

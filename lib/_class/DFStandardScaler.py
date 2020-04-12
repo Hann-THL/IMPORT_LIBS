@@ -12,6 +12,8 @@ class DFStandardScaler(BaseEstimator, TransformerMixin):
         self.columns        = X.columns if self.columns is None else self.columns
         self.transform_cols = [x for x in X.columns if x in self.columns]
         self.model.fit(X[self.transform_cols])
+
+        return self
     
     def transform(self, X):
         if self.transform_cols is None:

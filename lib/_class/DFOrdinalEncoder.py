@@ -10,6 +10,7 @@ class DFOrdinalEncoder(BaseEstimator, TransformerMixin):
         
     def fit(self, X, y=None):
         self.transform_mapper_dict = {k: v for k,v in self.mapper_dict.items() if k in X.columns}
+        return self
     
     def transform(self, X):
         if self.transform_mapper_dict is None:
