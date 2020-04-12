@@ -293,6 +293,41 @@ def bar_mean_median(df, y, title='Bar - Mean-Median',
                         xaxis_titles=[f'{x} - {y.title()}' for x in columns for y in stats],
                         layout_kwargs=layout_kwargs, to_image=to_image)
 
+# Reference: https://stackoverflow.com/questions/51170553/qq-plot-using-plotly-in-python
+def qq(df, title='QQ',
+       out_path=None, max_col=2, layout_kwargs={}, to_image=False):
+    
+    columns     = df.select_dtypes(include='number')
+    data_groups = []
+    colors       = DEFAULT_PLOTLY_COLORS
+
+    for column in columns:
+        (osm, osr), (slope, intercept, r) = probplot(df[column])
+        line_points = np.array([osm[0], osm[-1]])
+
+        data = []
+        data.append(go.Scattergl(
+            x=osm,
+            y=osr,
+            mode='markers',
+            showlegend=False,
+            marker={'color': colors[0]}
+        ))
+        data.append(go.Scattergl(
+            x=line_points,
+            y=intercept + slope * line_points,
+            mode='lines',
+            showlegend=False,
+            marker={'color': 'red'},
+        ))
+        data_groups.append(data)
+
+    datagroups_subplots(data_groups, max_col=max_col, title=title, out_path=out_path,
+                        xaxis_titles=['Theoretical Quantiles' for _ in columns],
+                        yaxis_titles=['Ordered Values' if i % max_col == 0 else None for i,_ in enumerate(columns)],
+                        subplot_titles=list(columns),
+                        layout_kwargs=layout_kwargs, to_image=to_image)
+
 def scatter(df, xy_tuples, title='Scatter', color=None,
             out_path=None, max_col=2, layout_kwargs={}, to_image=False,
             scatter_kwargs={}):
