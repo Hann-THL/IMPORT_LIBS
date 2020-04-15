@@ -5,8 +5,8 @@ from sklearn.preprocessing import StandardScaler
 class DFStandardScaler(BaseEstimator, TransformerMixin):
     def __init__(self, columns=None, **kwargs):
         self.columns        = columns
-        self.transform_cols = None
         self.model          = StandardScaler(**kwargs)
+        self.transform_cols = None
         
     def fit(self, X, y=None):
         self.columns        = X.columns if self.columns is None else self.columns
@@ -25,8 +25,7 @@ class DFStandardScaler(BaseEstimator, TransformerMixin):
         return new_X
     
     def fit_transform(self, X, y=None):
-        self.fit(X)
-        return self.transform(X)
+        return self.fit(X).self.transform(X)
     
     def inverse_transform(self, X):
         if self.transform_cols is None:

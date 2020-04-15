@@ -40,5 +40,4 @@ class DFDuplicateRemoval(BaseEstimator, TransformerMixin):
         return new_X
     
     def fit_transform(self, X, y=None):
-        self.fit(X)
-        return self.transform(X)
+        return self.fit(X).self.transform(X)

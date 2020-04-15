@@ -6,8 +6,8 @@ from sklearn.impute import SimpleImputer
 class DFSimpleImputer(BaseEstimator, TransformerMixin):
     def __init__(self, columns=None, **kwargs):
         self.columns        = columns
-        self.transform_cols = None
         self.model          = SimpleImputer(**kwargs)
+        self.transform_cols = None
         
     def fit(self, X, y=None):
         self.columns        = X.columns if self.columns is None else self.columns
@@ -26,5 +26,4 @@ class DFSimpleImputer(BaseEstimator, TransformerMixin):
         return new_X
     
     def fit_transform(self, X, y=None):
-        self.fit(X)
-        return self.transform(X)
+        return self.fit(X).self.transform(X)
