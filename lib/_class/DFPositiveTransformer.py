@@ -1,6 +1,5 @@
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.exceptions import NotFittedError
-import pandas as pd
 import numpy as np
 
 # Reference: https://blogs.sas.com/content/iml/2011/04/27/log-transformations-how-to-handle-negative-data-values.html

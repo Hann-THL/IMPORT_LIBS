@@ -1,6 +1,5 @@
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.exceptions import NotFittedError
-import pandas as pd
 from scipy.special import boxcox, inv_boxcox
 
 # Reference: https://www.statisticshowto.com/box-cox-transformation/

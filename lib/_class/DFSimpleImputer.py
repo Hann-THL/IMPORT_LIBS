@@ -1,7 +1,6 @@
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.exceptions import NotFittedError
 from sklearn.impute import SimpleImputer
-import pandas as pd
 
 # Reference: https://towardsdatascience.com/6-different-ways-to-compensate-for-missing-values-data-imputation-with-examples-6022d9ca0779
 class DFSimpleImputer(BaseEstimator, TransformerMixin):

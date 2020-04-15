@@ -1,6 +1,5 @@
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.exceptions import NotFittedError
-import pandas as pd
 
 class DFDuplicateRemoval(BaseEstimator, TransformerMixin):
     def __init__(self, keep='first', target=None, subset=None):

@@ -1,7 +1,6 @@
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.exceptions import NotFittedError
 from sklearn.preprocessing import RobustScaler
-import pandas as pd
 
 class DFRobustScaler(BaseEstimator, TransformerMixin):
     def __init__(self, columns=None, **kwargs):
