@@ -26,4 +26,4 @@ class DFSimpleImputer(BaseEstimator, TransformerMixin):
         return new_X
     
     def fit_transform(self, X, y=None):
-        return self.fit(X).self.transform(X)
+        return self.fit(X).transform(X)
