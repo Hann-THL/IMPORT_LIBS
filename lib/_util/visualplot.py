@@ -328,6 +328,25 @@ def prob(df, title='Probability',
                         subplot_titles=list(columns),
                         layout_kwargs=layout_kwargs, to_image=to_image)
 
+def line(df, xy_tuples, title='Line',
+         out_path=None, max_col=2, layout_kwargs={}, to_image=False,
+         line_kwargs={}):
+    
+    data_groups = []
+    
+    for index, (x, y) in enumerate(xy_tuples):
+        fig = px.line(df, x=x, y=y, **line_kwargs)
+        
+        if index != 0:
+            for data in fig['data']:
+                data['showlegend'] = False
+        data_groups.append(fig['data'])
+
+    datagroups_subplots(data_groups, max_col=max_col, title=title, out_path=out_path,
+                        xaxis_titles=[xy[0] for xy in xy_tuples],
+                        yaxis_titles=[xy[1] for xy in xy_tuples],
+                        layout_kwargs=layout_kwargs, to_image=to_image)
+    
 def scatter(df, xy_tuples, title='Scatter', color=None,
             out_path=None, max_col=2, layout_kwargs={}, to_image=False,
             scatter_kwargs={}):
