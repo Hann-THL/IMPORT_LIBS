@@ -435,6 +435,33 @@ def corrmat(df, title='Correlation Matrix',
         to_image=to_image
     )
 
+def distmat(df, target, title='Distribution Matrix',
+            out_path=None, layout_kwargs={}, to_image=False,
+            heatmap_kwargs={}):
+    
+    columns = df.select_dtypes(include='object')
+    columns = [x for x in columns if x != target]
+
+    dist_dfs = []
+    for column in columns:
+        dist_df = pd.crosstab(index=df[column], columns=df[target])
+        dist_df['DISTMAT_TOTAL'] = dist_df.sum(axis=1)
+        dist_df = pd.concat([(dist_df[x] / dist_df['DISTMAT_TOTAL']).to_frame(name=x) for x in dist_df.columns if x != 'DISTMAT_TOTAL'], axis=1)
+        dist_df.index = f'{column}_' + dist_df.index
+        dist_dfs.append(dist_df)
+
+    dist_df = pd.concat(dist_dfs)
+    heatmap(
+        x=dist_df.columns,
+        y=dist_df.index,
+        z=dist_df.values,
+        layout_kwargs=layout_kwargs,
+        heatmap_kwargs=heatmap_kwargs,
+        title=title,
+        out_path=out_path,
+        to_image=to_image
+    )
+
 
 
 # AUDIO PROCESSING
