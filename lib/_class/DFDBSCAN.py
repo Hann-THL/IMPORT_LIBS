@@ -63,7 +63,8 @@ class DFDBSCAN(BaseEstimator, ClusterMixin):
 
         return self
     
-    def predict(self, X):
+    # NOTE: DBCSAN does not have predict()
+    def __predict(self, X):
         if self.transform_cols is None:
             raise NotFittedError(f"This {self.__class__.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.")
 
@@ -73,4 +74,4 @@ class DFDBSCAN(BaseEstimator, ClusterMixin):
         return new_X
     
     def fit_predict(self, X, y=None):
-        return self.fit(X).predict(X)
+        return self.fit(X).__predict(X)
