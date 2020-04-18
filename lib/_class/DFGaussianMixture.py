@@ -28,7 +28,7 @@ class DFGaussianMixture(BaseEstimator, ClusterMixin):
             'converged': [None for _ in range(self.model.n_components)]
         })
 
-        if self.eval_aic or self.eval_silhouette:
+        if self.eval_aic or self.eval_bic or self.eval_silhouette:
             aics        = []
             bics        = []
             silhouettes = []
