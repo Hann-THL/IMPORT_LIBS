@@ -1,8 +1,8 @@
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.exceptions import NotFittedError
-import pandas as pd
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.tools.tools import add_constant
+import pandas as pd
 
 # Reference: https://stackoverflow.com/questions/42658379/variance-inflation-factor-in-python
 class DFVIFThreshold(BaseEstimator, TransformerMixin):
