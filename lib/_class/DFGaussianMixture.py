@@ -52,9 +52,9 @@ class DFGaussianMixture(BaseEstimator, ClusterMixin):
                 # Cluster centroid
                 # Reference: https://stackoverflow.com/questions/47412749/how-can-i-get-a-representative-point-of-a-gmm-cluster
                 centroids = np.empty(shape=(model.n_components, tmp_X.shape[1]))
-                for x in range(model.n_components):
-                    density         = multivariate_normal(mean=model.means_[x], cov=model.covariances_[x]).logpdf(tmp_X)
-                    centroids[x, :] = tmp_X.loc[np.argmax(density)].values
+                for n in range(model.n_components):
+                    density         = multivariate_normal(mean=model.means_[n], cov=model.covariances_[n]).logpdf(tmp_X)
+                    centroids[n, :] = tmp_X.loc[np.argmax(density)].values
                 self.eval_df.at[x, 'centroid'] = centroids
 
                 # Reference: https://jakevdp.github.io/PythonDataScienceHandbook/05.12-gaussian-mixtures.html
