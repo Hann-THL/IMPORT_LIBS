@@ -24,15 +24,15 @@ class DFGaussianMixture(BaseEstimator, ClusterMixin):
         self.model.fit(X[self.transform_cols])
 
         self.eval_df = pd.DataFrame({
-            'n_cluster': [x+1 for x in range(self.model.n_components)],
-            'converged': [None for _ in range(self.model.n_components)]
+            'n_cluster': [x+1 for x in range(self.model.n_components)]
         })
 
         if self.eval_aic or self.eval_bic or self.eval_silhouette:
             aics        = []
             bics        = []
             silhouettes = []
-            self.eval_df['centroid'] = self.eval_df['n_cluster'].apply(lambda x: [])
+            self.eval_df['centroid']  = self.eval_df['n_cluster'].apply(lambda x: [])
+            self.eval_df['converged'] = [None for _ in range(self.model.n_components)]
 
             for x in range(self.model.n_components):
                 tmp_X = X[self.transform_cols].copy()
