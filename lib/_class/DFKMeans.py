@@ -31,9 +31,11 @@ class DFKMeans(BaseEstimator, ClusterMixin):
             self.eval_df['centroid'] = self.eval_df['n_cluster'].apply(lambda x: [])
 
             for x in range(self.model.n_clusters):
+                tmp_X = X[self.transform_cols].copy()
+                
                 model = copy.deepcopy(self.model)
                 model.n_clusters = x+1
-                model.fit(X[self.transform_cols])
+                model.fit(tmp_X)
 
                 # Cluster centroid
                 self.eval_df.at[x, 'centroid'] = model.cluster_centers_
@@ -44,7 +46,7 @@ class DFKMeans(BaseEstimator, ClusterMixin):
 
                 # Reference: https://towardsdatascience.com/clustering-metrics-better-than-the-elbow-method-6926e1f723a6
                 if self.eval_silhouette:
-                    silhouettes.append(np.nan if x == 0 else silhouette_score(X, model.labels_, metric='euclidean', random_state=model.random_state))
+                    silhouettes.append(np.nan if x == 0 else silhouette_score(tmp_X, model.labels_, metric='euclidean', random_state=model.random_state))
 
             if self.eval_inertia:
                 self.eval_df['inertia'] = inertias
