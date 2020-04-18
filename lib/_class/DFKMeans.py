@@ -30,9 +30,8 @@ class DFKMeans(BaseEstimator, ClusterMixin):
             silhouettes = []
             self.eval_df['centroid'] = self.eval_df['n_cluster'].apply(lambda x: [])
 
+            tmp_X = X[self.transform_cols].copy()
             for x in range(self.model.n_clusters):
-                tmp_X = X[self.transform_cols].copy()
-                
                 model = copy.deepcopy(self.model)
                 model.n_clusters = x+1
                 model.fit(tmp_X)
