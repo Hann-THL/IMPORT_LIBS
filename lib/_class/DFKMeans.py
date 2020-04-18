@@ -1,18 +1,22 @@
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.exceptions import NotFittedError
 from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score
+from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
 import pandas as pd
 import numpy as np
 import copy
 
 class DFKMeans(BaseEstimator, ClusterMixin):
-    def __init__(self, cluster_name, eval_inertia=False, eval_silhouette=False, columns=None, **kwargs):
+    def __init__(self, cluster_name, columns=None,
+                 eval_inertia=False, eval_silhouette=False, eval_chi=False, eval_dbi=False,
+                 **kwargs):
         self.cluster_name    = cluster_name
-        self.eval_inertia    = eval_inertia
-        self.eval_silhouette = eval_silhouette
         self.columns         = columns
         self.model           = KMeans(**kwargs)
+        self.eval_inertia    = eval_inertia
+        self.eval_silhouette = eval_silhouette
+        self.eval_chi        = eval_chi
+        self.eval_dbi        = eval_dbi
         self.transform_cols  = None
         self.eval_df         = None
         
@@ -25,9 +29,11 @@ class DFKMeans(BaseEstimator, ClusterMixin):
             'n_cluster': [x+1 for x in range(self.model.n_clusters)],
         })
 
-        if self.eval_inertia or self.eval_silhouette:
+        if any([self.eval_inertia, self.eval_silhouette, self.eval_chi, self.eval_dbi]):
             inertias    = []
             silhouettes = []
+            chis        = []
+            dbis        = []
             self.eval_df['centroid'] = self.eval_df['n_cluster'].apply(lambda x: [])
 
             tmp_X = X[self.transform_cols].copy()
@@ -47,11 +53,25 @@ class DFKMeans(BaseEstimator, ClusterMixin):
                 if self.eval_silhouette:
                     silhouettes.append(np.nan if x == 0 else silhouette_score(tmp_X, model.labels_, metric='euclidean', random_state=model.random_state))
 
+                # Reference: https://stats.stackexchange.com/questions/52838/what-is-an-acceptable-value-of-the-calinski-harabasz-ch-criterion
+                if self.eval_chi:
+                    chis.append(np.nan if x == 0 else calinski_harabasz_score(tmp_X, model.labels_))
+
+                # Reference: https://stackoverflow.com/questions/59279056/davies-bouldin-index-higher-or-lower-score-better
+                if self.eval_dbi:
+                    dbis.append(np.nan if x == 0 else davies_bouldin_score(tmp_X, model.labels_))
+
             if self.eval_inertia:
                 self.eval_df['inertia'] = inertias
 
             if self.eval_silhouette:
                 self.eval_df['silhouette'] = silhouettes
+
+            if self.eval_chi:
+                self.eval_df['calinski_harabasz'] = chis
+
+            if self.eval_dbi:
+                self.eval_df['davies_bouldin'] = dbis
 
         return self
     

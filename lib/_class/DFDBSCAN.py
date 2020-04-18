@@ -1,24 +1,28 @@
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.exceptions import NotFittedError
 from sklearn.cluster import DBSCAN
-from sklearn.metrics import silhouette_score
+from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
 import pandas as pd
 import numpy as np
 import copy
 
 # Reference: https://towardsdatascience.com/dbscan-clustering-for-data-shapes-k-means-cant-handle-well-in-python-6be89af4e6ea
 class DFDBSCAN(BaseEstimator, ClusterMixin):
-    def __init__(self, cluster_name, eps_samples_tuples=None, eval_cluster=False, eval_silhouette=False, columns=None, random_state=None, **kwargs):
-        if eval_cluster or eval_silhouette:
+    def __init__(self, cluster_name, columns=None, random_state=None,
+                 eps_samples_tuples=None, eval_cluster=False, eval_silhouette=False, eval_chi=False, eval_dbi=False,
+                 **kwargs):
+        if any([eval_cluster, eval_silhouette, eval_chi, eval_dbi]):
             assert eps_samples_tuples is not None, 'eps_samples_tuples should consists of [(eps, min_samples)] for DBSCAN evaluation.'
 
         self.cluster_name       = cluster_name
-        self.eps_samples_tuples = eps_samples_tuples
-        self.eval_cluster       = eval_cluster
-        self.eval_silhouette    = eval_silhouette
         self.columns            = columns
         self.random_state       = random_state
         self.model              = DBSCAN(**kwargs)
+        self.eps_samples_tuples = eps_samples_tuples
+        self.eval_cluster       = eval_cluster
+        self.eval_silhouette    = eval_silhouette
+        self.eval_chi           = eval_chi
+        self.eval_dbi           = eval_dbi
         self.transform_cols     = None
         self.eval_df            = None
         
@@ -29,10 +33,12 @@ class DFDBSCAN(BaseEstimator, ClusterMixin):
 
         self.eval_df = pd.DataFrame()
 
-        if self.eval_cluster or self.eval_silhouette:
+        if any([self.eval_cluster, self.eval_silhouette, self.eval_chi, self.eval_dbi]):
             n_clusters  = []
             n_noises    = []
             silhouettes = []
+            chis        = []
+            dbis        = []
 
             self.eval_df['eps']         = [x[0] for x in self.eps_samples_tuples]
             self.eval_df['min_samples'] = [x[1] for x in self.eps_samples_tuples]
@@ -54,6 +60,14 @@ class DFDBSCAN(BaseEstimator, ClusterMixin):
                 if self.eval_silhouette:
                     silhouettes.append(np.nan if n_cluster == 1 else silhouette_score(tmp_X, model.labels_, metric='euclidean', random_state=self.random_state))
 
+                # Reference: https://stats.stackexchange.com/questions/52838/what-is-an-acceptable-value-of-the-calinski-harabasz-ch-criterion
+                if self.eval_chi:
+                    chis.append(np.nan if n_cluster == 1 else calinski_harabasz_score(tmp_X, model.labels_))
+
+                # Reference: https://stackoverflow.com/questions/59279056/davies-bouldin-index-higher-or-lower-score-better
+                if self.eval_dbi:
+                    dbis.append(np.nan if n_cluster == 1 else davies_bouldin_score(tmp_X, model.labels_))
+
             if self.eval_cluster:
                 self.eval_df['n_cluster'] = n_clusters
                 self.eval_df['n_noise']   = n_noises
@@ -61,9 +75,15 @@ class DFDBSCAN(BaseEstimator, ClusterMixin):
             if self.eval_silhouette:
                 self.eval_df['silhouette'] = silhouettes
 
+            if self.eval_chi:
+                self.eval_df['calinski_harabasz'] = chis
+
+            if self.eval_dbi:
+                self.eval_df['davies_bouldin'] = dbis
+
         return self
     
-    # NOTE: DBCSAN does not have predict()
+    # NOTE: DBSCAN does not have predict()
     def __predict(self, X):
         if self.transform_cols is None:
             raise NotFittedError(f"This {self.__class__.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.")
