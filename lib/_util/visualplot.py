@@ -3,6 +3,7 @@ import lib._util.fileproc as fp
 # Plotly
 import plotly.io as pio
 import plotly.express as px
+import plotly.figure_factory as ff
 import plotly.graph_objects as go
 from plotly.colors import DEFAULT_PLOTLY_COLORS
 from plotly.subplots import make_subplots
@@ -14,6 +15,7 @@ import pandas as pd
 import numpy as np
 import statsmodels.api as sm
 from scipy.stats import linregress, probplot
+from scipy.cluster.hierarchy import linkage
 
 def faststat(df, max_rows=None):
     stat_df = df.isna().sum().to_frame(name='N/A Count')
@@ -461,6 +463,17 @@ def distmat(df, target, title='Distribution Matrix',
         out_path=out_path,
         to_image=to_image
     )
+
+# Reference: https://stackoverflow.com/questions/38452379/plotting-a-dendrogram-using-plotly-python
+def dendrogram(df, title='Dendrogram',
+               out_path=None, layout_kwargs={}, to_image=False):
+
+    fig = ff.create_dendrogram(df, linkagefun=lambda x: linkage(df, method='ward', metric='euclidean'))
+
+    layout_kwargs['title'] = title
+    fig.update_layout(**layout_kwargs)
+
+    generate_plot(fig, out_path=out_path, out_filename=title, to_image=to_image)
 
 
 
