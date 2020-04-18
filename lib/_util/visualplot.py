@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 from plotly.colors import DEFAULT_PLOTLY_COLORS
 from plotly.subplots import make_subplots
 from plotly.offline import init_notebook_mode, iplot, plot
-init_notebook_mode(connected=True)
+# init_notebook_mode(connected=True)
 pio.templates.default = 'seaborn'
 
 import pandas as pd
