@@ -18,10 +18,19 @@ from scipy.stats import linregress, probplot
 from scipy.cluster.hierarchy import linkage
 
 def faststat(df, max_rows=None):
+    # N/A info
     stat_df = df.isna().sum().to_frame(name='N/A Count')
-    stat_df['N/A Ratio'] = stat_df['N/A Count'] / len(df)
+    stat_df['N/A Ratio'] = np.round(stat_df['N/A Count'] / len(df), 5)
+
+    # Type info
     stat_df = stat_df.merge(df.dtypes.to_frame(name='Type'), left_index=True, right_index=True, how='left')
     
+    # Unique info
+    stat_df['Uniq. Count'] = stat_df.index.to_series().apply(lambda x: -1)
+    for x in stat_df.index:
+        stat_df.at[x, 'Uniq. Count'] = len(df[x].unique())
+    stat_df['Uniq. Ratio'] = np.round(stat_df['Uniq. Count'] / len(df), 5)
+
     default_max_rows = pd.options.display.max_rows
     pd.set_option('display.max_rows', max_rows)
     print(df.shape)
