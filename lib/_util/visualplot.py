@@ -28,13 +28,17 @@ def faststat(df, max_rows=None):
     print(stat_df)
     pd.set_option('display.max_rows', default_max_rows)
 
-def value_count(df, column):
+def value_count(df, column, max_rows=None):
     count_df = df[column].value_counts().to_frame(name='Count')
     ratio_df = df[column].value_counts(normalize=True).to_frame(name='Ratio')
     stat_df  = count_df.merge(ratio_df, left_index=True, right_index=True, how='left')
     stat_df.index.name = column
     
+    default_max_rows = pd.options.display.max_rows
+    pd.set_option('display.max_rows', max_rows)
+    print(f'Unique: {len(stat_df) :,}')
     print(stat_df)
+    pd.set_option('display.max_rows', default_max_rows)
 
 def generate_plot(fig, out_path=None, out_filename=None, to_image=False):
     if out_path is None or out_filename is None:
