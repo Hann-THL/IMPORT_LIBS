@@ -2,18 +2,30 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.exceptions import NotFittedError
 from prince import MCA
 import pandas as pd
+import numpy as np
 
 class DFMCA(BaseEstimator, TransformerMixin):
+    # NOTE:
+    # - DFMCA(n_components=df[columns].apply(lambda x: len(x.unique())).sum()) to remain every dimensions
     def __init__(self, columns=None, prefix='mca_', **kwargs):
         self.columns        = columns
         self.prefix         = prefix
         self.model          = MCA(**kwargs)
         self.transform_cols = None
+        self.stat_df        = None
         
     def fit(self, X, y=None):
         self.columns        = X.columns if self.columns is None else self.columns
         self.transform_cols = [x for x in X.columns if x in self.columns]
         self.model.fit(X[self.transform_cols])
+
+        # Reference: Reference: https://www.appliedaicourse.com/lecture/11/applied-machine-learning-online-course/2896/pca-for-dimensionality-reduction-not-visualization/0/free-videos
+        self.stat_df = pd.DataFrame({
+            'dimension': [x+1 for x in range(len(self.model.eigenvalues_))],
+            'eigenvalues': self.model.eigenvalues_,
+            'explained_inertia': self.model.explained_inertia_,
+            'cumsum_explained_inertia': np.cumsum(self.model.explained_inertia_)
+        })
 
         return self
     
