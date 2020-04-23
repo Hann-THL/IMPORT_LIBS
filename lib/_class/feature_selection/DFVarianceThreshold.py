@@ -9,11 +9,18 @@ class DFVarianceThreshold(BaseEstimator, TransformerMixin):
         self.columns        = columns
         self.model          = VarianceThreshold(**kwargs)
         self.transform_cols = None
+        self.stat_df        = None
         
     def fit(self, X, y=None):
         self.columns        = X.columns if self.columns is None else self.columns
         self.transform_cols = [x for x in X.columns if x in self.columns]
         self.model.fit(X[self.transform_cols])
+
+        self.stat_df = pd.DataFrame({
+            'feature':  self.transform_cols,
+            'support':  self.model.get_support(),
+            'variance': self.model.variances_
+        })
 
         return self
     
