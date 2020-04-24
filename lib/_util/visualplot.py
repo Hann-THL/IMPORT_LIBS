@@ -314,7 +314,7 @@ def prob(df, title='Probability',
     
     columns     = df.select_dtypes(include='number')
     data_groups = []
-    colors       = DEFAULT_PLOTLY_COLORS
+    colors      = DEFAULT_PLOTLY_COLORS
 
     for column in columns:
         (osm, osr), (slope, intercept, r) = probplot(df[column])
@@ -345,17 +345,29 @@ def prob(df, title='Probability',
 
 def line(df, xy_tuples, title='Line',
          out_path=None, max_col=2, layout_kwargs={}, to_image=False,
-         line_kwargs={}):
+         line_kwargs={}, scattergl=False):
     
     data_groups = []
-    
+    colors      = DEFAULT_PLOTLY_COLORS
+
     for index, (x, y) in enumerate(xy_tuples):
-        fig = px.line(df, x=x, y=y, **line_kwargs)
-        
-        if index != 0:
-            for data in fig['data']:
-                data['showlegend'] = False
-        data_groups.append(fig['data'])
+        if scattergl:
+            data = []
+            data.append(go.Scattergl(
+                x=df[x].values,
+                y=df[y].values,
+                showlegend=False,
+                marker={'color': colors[0]},
+                **line_kwargs
+            ))
+            data_groups.append(data)
+
+        else:
+            fig = px.line(df, x=x, y=y, **line_kwargs)
+            if index != 0:
+                for data in fig['data']:
+                    data['showlegend'] = False
+            data_groups.append(fig['data'])
 
     datagroups_subplots(data_groups, max_col=max_col, title=title, out_path=out_path,
                         xaxis_titles=[xy[0] for xy in xy_tuples],
