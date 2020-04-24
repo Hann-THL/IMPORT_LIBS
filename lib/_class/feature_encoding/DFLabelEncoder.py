@@ -38,6 +38,6 @@ class DFLabelEncoder(BaseEstimator, TransformerMixin):
 
         new_X = X.copy()
         for k,v in self.model_dict.items():
-            new_X[k] = v.inverse_transform(new_X[k])
+            new_X[k] = v.inverse_transform(new_X[k].astype(int))
 
         return new_X
