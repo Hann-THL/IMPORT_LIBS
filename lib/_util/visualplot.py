@@ -149,7 +149,7 @@ def datagroups_subplots(data_groups, max_col, title,
 # BASIC
 def histogram(df, title='Histogram',
               out_path=None, max_col=2, layout_kwargs={}, to_image=False,
-              bin_algo='default'):
+              bin_algo='default', str_length=None, hidden_char='..'):
 
     bin_algos = ['default', 'count', 'width']
     assert bin_algo in bin_algos, f'bin_algo not in valid list: {bin_algos}'
@@ -172,8 +172,13 @@ def histogram(df, title='Histogram',
             nbinsx = None
             xbins  = None
 
+        x = df[column].copy()
+        if x.dtype == object:
+            x = x.sort_values()
+            x = np.where(x.str.len() > str_length, x.str.slice(stop=str_length).str.strip() + hidden_char, x)
+
         data.append(go.Histogram(
-            x=df[column].sort_values(),
+            x=x,
             name=column,
             showlegend=False,
             nbinsx=nbinsx,
