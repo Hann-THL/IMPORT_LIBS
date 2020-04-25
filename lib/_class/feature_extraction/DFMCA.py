@@ -7,6 +7,7 @@ import numpy as np
 class DFMCA(BaseEstimator, TransformerMixin):
     # NOTE:
     # - DFMCA(n_components=df[columns].apply(lambda x: len(x.unique())).sum()) to remain every dimensions
+    # - Ensure to convert binary encoded features as string, to ensure prince.MCA() will generate new one-hot encoded features by calling pd.get_dummies()
     def __init__(self, columns=None, prefix='mca_', **kwargs):
         self.columns        = columns
         self.prefix         = prefix
