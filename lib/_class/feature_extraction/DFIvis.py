@@ -3,8 +3,22 @@ from sklearn.exceptions import NotFittedError
 from ivis import Ivis
 import pandas as pd
 
-# Reference: https://bering-ivis.readthedocs.io/en/latest/supervised.html
+# Reference:
+# - https://bering-ivis.readthedocs.io/en/latest/supervised.html
+# - https://bering-ivis.readthedocs.io/en/latest/hyperparameters.html
+
+# Observations    k         n_epochs_without_progress    model
+# --------------------------------------------------------------
+# < 1K            10-15     20-30                        maaten
+# 1K-10K          10-30     10-20                        maaten
+# 10K-50K         15-150    10-20                        maaten
+# 50K-100K        15-150    10-15                        maaten
+# 100K-500K       15-150    5-10                         maaten
+# 500K-1M         15-150    3-5                          szubert
+# > 1M            15-150    2-3                          szubert
 class DFIvis(BaseEstimator, TransformerMixin):
+	# NOTE:
+    # - DFIvis(embedding_dims=df.shape[1]) to remain every dimensions
     def __init__(self, columns=None, prefix='ivis_', **kwargs):
         self.columns        = columns
         self.prefix         = prefix
