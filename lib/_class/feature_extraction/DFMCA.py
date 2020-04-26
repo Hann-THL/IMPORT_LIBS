@@ -36,9 +36,7 @@ class DFMCA(BaseEstimator, TransformerMixin):
 
         new_X = self.model.transform(X[self.transform_cols])
         new_X.rename(columns=dict(zip(new_X.columns, [f'{self.prefix}{x}' for x in new_X.columns])), inplace=True)
-
-        new_X = pd.concat([X, new_X], axis=1)
-        new_X.drop(columns=self.transform_cols, inplace=True)
+        new_X = pd.concat([X.drop(columns=self.transform_cols), new_X], axis=1)
 
         return new_X
     
