@@ -20,9 +20,10 @@ class DFOneHotEncoder(BaseEstimator, TransformerMixin):
         if self.transform_cols is None:
             raise NotFittedError(f"This {self.__class__.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.")
 
+        drops = self.model.drop
         new_X = pd.DataFrame(
             self.model.transform(X[self.transform_cols]).toarray(),
-            columns=[f'{self.transform_cols[i]}_{y}' for i,x in enumerate(self.model.categories_) for y in x]
+            columns=[f'{self.transform_cols[i]}_{y}' for i,x in enumerate(self.model.categories_) for y in x if (drops is None or y != drops[i])]
         )
 
         new_X = pd.concat([X, new_X], axis=1)
