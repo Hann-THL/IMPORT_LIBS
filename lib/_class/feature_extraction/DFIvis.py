@@ -40,6 +40,7 @@ class DFIvis(BaseEstimator, TransformerMixin):
             self.model.transform(X[self.transform_cols].values),
             columns=[f'{self.prefix}{x}' for x in range(self.model.embedding_dims)]
         )
+        new_X = pd.concat([X.drop(columns=self.transform_cols), new_X], axis=1)
 
         return new_X
     
