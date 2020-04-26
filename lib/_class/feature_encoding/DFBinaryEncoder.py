@@ -21,6 +21,8 @@ class DFBinaryEncoder(BaseEstimator, TransformerMixin):
             raise NotFittedError(f"This {self.__class__.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.")
 
         new_X = self.model.transform(X[self.transform_cols])
+        new_X[new_X.columns] = new_X[new_X.columns].astype('int8')
+
         new_X = pd.concat([X, new_X], axis=1)
         new_X.drop(columns=self.transform_cols, inplace=True)
 
