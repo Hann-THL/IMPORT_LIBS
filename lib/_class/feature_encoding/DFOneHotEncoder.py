@@ -2,6 +2,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.exceptions import NotFittedError
 from sklearn.preprocessing import OneHotEncoder
 import pandas as pd
+import numpy as np
 
 class DFOneHotEncoder(BaseEstimator, TransformerMixin):
     def __init__(self, columns=None, **kwargs):
@@ -21,6 +22,7 @@ class DFOneHotEncoder(BaseEstimator, TransformerMixin):
             raise NotFittedError(f"This {self.__class__.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.")
 
         drops = self.model.drop
+        drops = list(drops) if type(drops) is np.ndarray else drops
         drops = [x[0] for x in self.model.categories_] if drops == 'first' else drops
 
         new_X = pd.DataFrame(
