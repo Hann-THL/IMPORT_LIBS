@@ -603,7 +603,7 @@ def autocorr(df, title='Autocorrelation',
     columns = df.select_dtypes(include='number').columns
     nlags   = len(df) -1
     autocorr_dict = {
-        'Lag': [x +1 for x in range(nlags +1)]
+        'Lag': [x for x in range(nlags +1)]
     }
 
     for column in columns:
@@ -625,7 +625,7 @@ def lag(df, lag=1, title='Lag',
         out_path=None, max_col=2, layout_kwargs={}, to_image=False,
         scatter_kwargs={}):
 
-    max_lag = len(df)
+    max_lag = len(df) -1
     assert lag >= 1 and lag <= max_lag, f'lag is out of range. (1 - {max_lag})'
 
     lag_df = df.select_dtypes(include='number')
