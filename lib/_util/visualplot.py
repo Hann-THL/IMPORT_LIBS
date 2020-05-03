@@ -13,9 +13,16 @@ pio.templates.default = 'seaborn'
 
 import pandas as pd
 import numpy as np
+
+# Stats Models
 import statsmodels.api as sm
+from statsmodels.tsa.stattools import acf
+
+# Scipy
 from scipy.stats import linregress, probplot
 from scipy.cluster.hierarchy import linkage
+
+
 
 def faststat(df, max_rows=None):
     # N/A info
@@ -585,3 +592,55 @@ def spectogram(df, z, title='Spectogram', y_title='Frequency',
                         xaxis_titles=xaxis_titles,
                         yaxis_titles=yaxis_titles,
                         layout_kwargs=layout_kwargs, to_image=to_image)
+
+
+
+# TIME SERIES
+def autocorr(df, title='Autocorrelation',
+             out_path=None, max_col=2, layout_kwargs={}, to_image=False,
+             line_kwargs={}, scattergl=False):
+    
+    columns = df.select_dtypes(include='number').columns
+    nlags   = len(df) -1
+    autocorr_dict = {
+        'Lag': [x +1 for x in range(nlags +1)]
+    }
+
+    for column in columns:
+        autocorr_dict[f'Autocorrelation ({column})'] = acf(df[column], nlags=nlags, fft=False)
+    autocorr_df = pd.DataFrame(autocorr_dict)
+
+    line(autocorr_df,
+         xy_tuples=[('Lag', x) for x in autocorr_df.columns if x != 'Lag'],
+         title=title,
+         out_path=out_path,
+         max_col=max_col,
+         layout_kwargs=layout_kwargs,
+         to_image=to_image,
+         line_kwargs=line_kwargs,
+         scattergl=scattergl)
+
+# Reference: https://www.itl.nist.gov/div898/handbook/eda/section3/lagplot.htm
+def lag(df, lag=1, title='Lag',
+        out_path=None, max_col=2, layout_kwargs={}, to_image=False,
+        scatter_kwargs={}):
+
+    max_lag = len(df)
+    assert lag >= 1 and lag <= max_lag, f'lag is out of range. (1 - {max_lag})'
+
+    lag_df = df.select_dtypes(include='number')
+    lag_df = lag_df.merge(lag_df.shift(-lag), left_index=True, right_index=True, how='left')
+
+    t_dict  = {x: x.replace('_x', ' (t)') for x in lag_df.columns if x.endswith('_x')}
+    t1_dict = {x: x.replace('_y', ' (t+1)') for x in lag_df.columns if x.endswith('_y')}
+    lag_df.rename(columns={**t_dict, **t1_dict}, inplace=True)
+    lag_df.dropna(inplace=True)
+
+    scatter(lag_df,
+            xy_tuples=[(x, list(t1_dict.values())[i]) for i,x in enumerate(t_dict.values())],
+            title=title,
+            out_path=out_path,
+            max_col=max_col,
+            layout_kwargs=layout_kwargs,
+            to_image=to_image,
+            scatter_kwargs=scatter_kwargs)
