@@ -5,8 +5,9 @@ import numpy as np
 
 # Reference: https://towardsdatascience.com/all-about-categorical-variable-encoding-305f3361fd02
 class DFFrequencyEncoder(BaseEstimator, TransformerMixin):
-    def __init__(self, columns=None, concat_symbol='|', decimal=5):
+    def __init__(self, columns=None, normalize=True, concat_symbol='|', decimal=5):
         self.columns               = columns
+        self.normalize             = normalize
         self.concat_symbol         = concat_symbol
         self.decimal               = decimal
         self.transform_mapper_dict = None
@@ -16,7 +17,7 @@ class DFFrequencyEncoder(BaseEstimator, TransformerMixin):
         self.transform_mapper_dict = {}
 
         for column in self.columns:
-            mapper            = np.round(X[column].value_counts(normalize=True), self.decimal)
+            mapper            = np.round(X[column].value_counts(normalize=self.normalize), self.decimal)
             mapper.name       = 'encode'
             mapper.index.name = column
 
@@ -30,7 +31,7 @@ class DFFrequencyEncoder(BaseEstimator, TransformerMixin):
 
         new_X = X.copy()
         for k,v in self.transform_mapper_dict.items():
-            new_X[k] = new_X[k].map(v)
+            new_X[k] = new_X[k].map(v).fillna(v.min())
 
         return new_X
     

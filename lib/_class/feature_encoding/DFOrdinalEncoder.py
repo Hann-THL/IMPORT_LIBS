@@ -3,8 +3,9 @@ from sklearn.exceptions import NotFittedError
 import pandas as pd
 
 class DFOrdinalEncoder(BaseEstimator, TransformerMixin):
-    def __init__(self, mapper_dict, concat_symbol='|'):
+    def __init__(self, mapper_dict, handle_unknown=-1, concat_symbol='|'):
         self.mapper_dict           = mapper_dict
+        self.handle_unknown         = handle_unknown
         self.concat_symbol         = concat_symbol
         self.transform_mapper_dict = None
         
@@ -18,7 +19,7 @@ class DFOrdinalEncoder(BaseEstimator, TransformerMixin):
 
         new_X = X.copy()
         for k,v in self.transform_mapper_dict.items():
-            new_X[k] = new_X[k].map(v)
+            new_X[k] = new_X[k].map(v).fillna(self.handle_unknown)
 
         return new_X
     
