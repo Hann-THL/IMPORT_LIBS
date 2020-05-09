@@ -74,10 +74,11 @@ def generate_plot(fig, out_path=None, out_filename=None, to_image=False):
 
 def plot_subplots(data, max_col, title,
                   out_path=None, to_image=False,
-                  layout_kwargs={}, xaxis_titles=[], yaxis_titles=[], subplot_titles=None):
+                  layout_kwargs={}, xaxis_titles=[], yaxis_titles=[],
+                  subplot_kwargs={}):
 
     max_row = int(np.ceil(len(data) / max_col))
-    fig     = make_subplots(rows=max_row, cols=max_col, subplot_titles=subplot_titles)
+    fig     = make_subplots(rows=max_row, cols=max_col, **subplot_kwargs)
     
     for index, trace in enumerate(data):
         col = index +1
@@ -113,10 +114,11 @@ def plot_subplots(data, max_col, title,
 
 def datagroups_subplots(data_groups, max_col, title,
                         out_path=None, to_image=False,
-                        layout_kwargs={}, xaxis_titles=[], yaxis_titles=[], subplot_titles=None):
+                        layout_kwargs={}, xaxis_titles=[], yaxis_titles=[],
+                        subplot_kwargs={}):
 
     max_row = int(np.ceil(len(data_groups) / max_col))
-    fig     = make_subplots(rows=max_row, cols=max_col, subplot_titles=subplot_titles)
+    fig     = make_subplots(rows=max_row, cols=max_col, **subplot_kwargs)
 
     for index, data in enumerate(data_groups):
         col = index +1
@@ -352,7 +354,7 @@ def prob(df, title='Probability',
     datagroups_subplots(data_groups, max_col=max_col, title=title, out_path=out_path,
                         xaxis_titles=['Theoretical Quantiles' for _ in columns],
                         yaxis_titles=['Ordered Values' if i % max_col == 0 else None for i,_ in enumerate(columns)],
-                        subplot_titles=list(columns),
+                        subplot_kwargs={'subplot_titles': list(columns)},
                         layout_kwargs=layout_kwargs, to_image=to_image)
 
 def line(df, xy_tuples, title='Line',
@@ -415,7 +417,7 @@ def scatter(df, xy_tuples, title='Scatter', color=None,
     datagroups_subplots(data_groups, max_col=max_col, title=title, out_path=out_path,
                         xaxis_titles=[xy[0] for xy in xy_tuples],
                         yaxis_titles=[xy[1] for xy in xy_tuples],
-                        subplot_titles=subplot_titles,
+                        subplot_kwargs={'subplot_titles': subplot_titles},
                         layout_kwargs=layout_kwargs, to_image=to_image)
 
 def pair(df, title='Pair', color=None,
@@ -535,7 +537,7 @@ def wave(df, amplitude, title='Wave',
     yaxis_titles = ['Amplitude' if i % max_col == 0 else '' for i,_ in enumerate(new_df.index)]
 
     datagroups_subplots(data_groups, max_col=max_col, title=title, out_path=out_path,
-                        subplot_titles=new_df.index,
+                        subplot_kwargs={'subplot_titles': new_df.index},
                         xaxis_titles=xaxis_titles,
                         yaxis_titles=yaxis_titles,
                         layout_kwargs=layout_kwargs, to_image=to_image)
@@ -563,7 +565,7 @@ def fourier(df, frequency, magnitude, title='FT', x_title='Frequency',
     yaxis_titles = ['Magnitude' if i % max_col == 0 else '' for i,_ in enumerate(new_df.index)]
 
     datagroups_subplots(data_groups, max_col=max_col, title=title, out_path=out_path,
-                        subplot_titles=new_df.index,
+                        subplot_kwargs={'subplot_titles': new_df.index},
                         xaxis_titles=xaxis_titles,
                         yaxis_titles=yaxis_titles,
                         layout_kwargs=layout_kwargs, to_image=to_image)
@@ -588,7 +590,7 @@ def spectogram(df, z, title='Spectogram', y_title='Frequency',
     yaxis_titles = [y_title if i % max_col == 0 else '' for i,_ in enumerate(new_df.index)]
 
     datagroups_subplots(data_groups, max_col=max_col, title=title, out_path=out_path,
-                        subplot_titles=new_df.index,
+                        subplot_kwargs={'subplot_titles': new_df.index},
                         xaxis_titles=xaxis_titles,
                         yaxis_titles=yaxis_titles,
                         layout_kwargs=layout_kwargs, to_image=to_image)
@@ -607,7 +609,7 @@ def autocorr(df, title='Autocorrelation',
     }
 
     for column in columns:
-        autocorr_dict[f'Autocorrelation ({column})'] = acf(df[column], nlags=nlags, fft=False)
+        autocorr_dict[f'Autocorr. ({column})'] = acf(df[column], nlags=nlags, fft=False)
     autocorr_df = pd.DataFrame(autocorr_dict)
 
     line(autocorr_df,
