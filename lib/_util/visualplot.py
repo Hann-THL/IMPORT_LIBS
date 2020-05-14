@@ -283,34 +283,34 @@ def box_categorical(df, y, title='Box',
                         yaxis_titles=[y if i % max_col == 0 else None for i,_ in enumerate(columns)],
                         layout_kwargs=layout_kwargs, to_image=to_image)
 
-def bar_mean_median(df, y, title='Bar - Mean-Median',
-                    out_path=None, max_col=2, layout_kwargs={}, to_image=False):
+def meandist(df, y, title='Mean Distribution',
+             out_path=None, max_col=2, layout_kwargs={}, to_image=False):
 
     columns = df.select_dtypes(include='object')
     columns = [x for x in columns if x != y]
 
-    data_groups  = []
-    stats        = ['mean', 'median']
-    mean, median = df[y].mean(), df[y].median()
-    colors       = DEFAULT_PLOTLY_COLORS
+    data_groups = []
+    stats       = ['mean', 'count']
+    mean        = df[y].mean()
+    colors      = DEFAULT_PLOTLY_COLORS
 
     for column in columns:
         stat_df = df.groupby(column).agg(
             mean=(y, 'mean'),
-            median=(y, 'median')
+            count=(y, 'count')
         ).reset_index()
 
         for stat in stats:
             data = []
             data.append(go.Bar(
-                x=stat_df.sort_values(by=stat)[column],
+                x=stat_df.sort_values(by='mean')[column],
                 y=stat_df.sort_values(by=stat)[stat],
                 showlegend=False,
                 marker={'color': colors[0]}
             ))
             data.append(go.Scattergl(
                 x=stat_df.sort_values(by=stat)[column],
-                y=[mean if stat == 'mean' else median for x in range(len(stat_df))],
+                y=[mean if stat == 'mean' else None for x in range(len(stat_df))],
                 showlegend=False,
                 marker={'color': 'red'},
                 mode='lines',
