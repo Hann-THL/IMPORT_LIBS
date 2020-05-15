@@ -299,17 +299,18 @@ def meandist(df, y, title='Mean Distribution',
             mean=(y, 'mean'),
             count=(y, 'count')
         ).reset_index()
+        stat_df.sort_values(by='mean', inplace=True)
 
         for stat in stats:
             data = []
             data.append(go.Bar(
-                x=stat_df.sort_values(by='mean')[column],
-                y=stat_df.sort_values(by=stat)[stat],
+                x=stat_df[column],
+                y=stat_df[stat],
                 showlegend=False,
                 marker={'color': colors[0]}
             ))
             data.append(go.Scattergl(
-                x=stat_df.sort_values(by=stat)[column],
+                x=stat_df[column],
                 y=[mean if stat == 'mean' else None for x in range(len(stat_df))],
                 showlegend=False,
                 marker={'color': 'red'},
