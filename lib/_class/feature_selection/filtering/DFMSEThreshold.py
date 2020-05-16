@@ -1,15 +1,18 @@
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.exceptions import NotFittedError
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import RepeatedKFold
 import pandas as pd
+import numpy as np
+from tqdm import tqdm
 
 class DFMSEThreshold(BaseEstimator, TransformerMixin):
-    def __init__(self, columns=None, k=None, estimator=RandomForestRegressor()):
+    def __init__(self, columns=None, k=None, estimator=RandomForestRegressor(), cv=RepeatedKFold()):
         self.columns        = columns
         self.k              = k
         self.estimator      = estimator
+        self.cv             = cv
         self.transform_cols = None
         self.stat_df        = None
         
@@ -17,28 +20,37 @@ class DFMSEThreshold(BaseEstimator, TransformerMixin):
         self.columns        = X.columns if self.columns is None else self.columns
         self.transform_cols = [x for x in X.columns if x in self.columns]
 
-        # Separate dataset
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-
         # Univariate MSE
-        scores = []
+        cv_scores = []
         for column in self.transform_cols:
-            self.estimator.fit(X_train[[column]], y_train)
-            y_pred = self.estimator.predict(X_test[[column]])
-            scores.append(mean_squared_error(y_test, y_pred))
+            scores = []
+            splits = tqdm(self.cv.split(X, y))
+
+            for train_index, test_index in splits:
+                X_train = X.loc[train_index][[column]]
+                y_train = y.loc[train_index]
+                X_test  = X.loc[test_index][[column]]
+                y_test  = y.loc[test_index]
+
+                self.estimator.fit(X_train, y_train)
+                y_pred = self.estimator.predict(X_test)
+                scores.append(round(mean_squared_error(y_test, y_pred), 5))
+                splits.set_description(f'Cross-Validation[{column}]')
+
+            cv_scores.append(scores)
 
         self.stat_df = pd.DataFrame({
-            'feature': X[self.transform_cols].columns,
-            'mse':     scores
+            'feature':  self.transform_cols,
+            'cv_score': cv_scores
         })
+        self.stat_df['average_score'] = self.stat_df['cv_score'].apply(lambda x: np.mean(x))
+        self.stat_df['support']       = True
 
         # K features with highest score
-        if self.k is None:
-            self.stat_df['k_support'] = True
-        else:
+        if self.k is not None:
             rank_df = self.stat_df.copy()
             rank_df['k_support'] = True
-            rank_df.sort_values(by='mse', inplace=True)
+            rank_df.sort_values(by='average_score', inplace=True)
             rank_df = rank_df[['feature', 'k_support']][:self.k]
 
             self.stat_df = self.stat_df.merge(rank_df, on='feature', how='left')
@@ -50,7 +62,7 @@ class DFMSEThreshold(BaseEstimator, TransformerMixin):
         if self.transform_cols is None:
             raise NotFittedError(f"This {self.__class__.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.")
 
-        features = self.stat_df[self.stat_df['k_support']]['feature'].values
+        features = self.stat_df[self.stat_df['support']].sort_values(by='average_score')['feature'].values
         new_X    = X[features].copy()
 
         return new_X
