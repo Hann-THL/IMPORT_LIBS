@@ -7,10 +7,11 @@ import numpy as np
 from tqdm import tqdm
 
 class DFMutualInfoClassifierThreshold(BaseEstimator, TransformerMixin):
-    def __init__(self, columns=None, k='all', cv=RepeatedStratifiedKFold()):
+    def __init__(self, columns=None, k=None, cv=RepeatedStratifiedKFold()):
         self.columns        = columns
-        self.selector       = SelectKBest(mutual_info_classif, k=k)
+        self.k              = k
         self.cv             = cv
+        self.selector       = SelectKBest(mutual_info_classif, k='all')
         self.transform_cols = None
         self.stat_df        = None
         
@@ -28,7 +29,7 @@ class DFMutualInfoClassifierThreshold(BaseEstimator, TransformerMixin):
             
             self.selector.fit(X_sample, y_sample)
             cv_scores.append(self.selector.scores_)
-            cv_supports.append(self.selector.get_support())
+            cv_supports.append(self.selector.scores_ > self.selector.scores_.mean())
             splits.set_description('Cross-Validation')
 
         cv_scores    = np.array(cv_scores).T
@@ -41,13 +42,24 @@ class DFMutualInfoClassifierThreshold(BaseEstimator, TransformerMixin):
         self.stat_df['average_score'] = self.stat_df['cv_score'].apply(lambda x: np.mean(x))
         self.stat_df['support']       = self.stat_df['cv_support'].apply(lambda x: np.where(np.sum(np.where(x, 1, 0)) / len(x) > .5, True, False))
 
+        # K features with highest score
+        if self.k is not None:
+            rank_df = self.stat_df.copy()
+            rank_df['k_support'] = True
+            rank_df.sort_values(by='average_score', ascending=False, inplace=True)
+            rank_df = rank_df[['feature', 'k_support']][:self.k]
+
+            self.stat_df = self.stat_df.merge(rank_df, on='feature', how='left')
+            self.stat_df['k_support'].fillna(False, inplace=True)
+
         return self
     
     def transform(self, X):
         if self.transform_cols is None:
             raise NotFittedError(f"This {self.__class__.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.")
 
-        features = self.stat_df[self.stat_df['support']].sort_values(by='average_score', ascending=False)['feature'].values
+        support  = 'support' if self.k is None else 'k_support'
+        features = self.stat_df[self.stat_df[support]].sort_values(by='average_score', ascending=False)['feature'].values
         new_X    = X[features].copy()
 
         return new_X

@@ -7,11 +7,11 @@ import numpy as np
 from tqdm import tqdm
 
 class DFANOVARegressorThreshold(BaseEstimator, TransformerMixin):
-    def __init__(self, columns=None, k='all', cv=RepeatedKFold()):
+    def __init__(self, columns=None, k=None, cv=RepeatedKFold()):
         self.columns        = columns
         self.k              = k
         self.cv             = cv
-        self.selector       = SelectKBest(f_regression, k=self.k)
+        self.selector       = SelectKBest(f_regression, k='all')
         self.transform_cols = None
         self.stat_df        = None
         
@@ -31,7 +31,7 @@ class DFANOVARegressorThreshold(BaseEstimator, TransformerMixin):
             self.selector.fit(X_sample, y_sample)
             cv_scores.append(self.selector.scores_)
             cv_pvalues.append(self.selector.pvalues_)
-            cv_supports.append(self.selector.get_support())
+            cv_supports.append(self.selector.scores_ > self.selector.scores_.mean())
             splits.set_description('Cross-Validation')
 
         cv_scores    = np.array(cv_scores).T
@@ -49,7 +49,7 @@ class DFANOVARegressorThreshold(BaseEstimator, TransformerMixin):
         self.stat_df['support']        = np.where(self.stat_df['average_pvalue'] > .05, False, self.stat_df['support'])
 
         # K features with highest score
-        if self.k != 'all':
+        if self.k is not None:
             rank_df = self.stat_df.copy()
             rank_df['k_support'] = True
             rank_df.sort_values(by='average_score', ascending=False, inplace=True)
@@ -64,7 +64,7 @@ class DFANOVARegressorThreshold(BaseEstimator, TransformerMixin):
         if self.transform_cols is None:
             raise NotFittedError(f"This {self.__class__.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.")
 
-        support  = 'support' if self.k == 'all' else 'k_support'
+        support  = 'support' if self.k is None else 'k_support'
         features = self.stat_df[self.stat_df[support]].sort_values(by='average_score', ascending=False)['feature'].values
         new_X    = X[features].copy()
 

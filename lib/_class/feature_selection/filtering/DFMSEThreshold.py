@@ -44,9 +44,9 @@ class DFMSEThreshold(BaseEstimator, TransformerMixin):
             'cv_score': cv_scores
         })
         self.stat_df['average_score'] = self.stat_df['cv_score'].apply(lambda x: np.mean(x))
-        self.stat_df['support']       = True
+        self.stat_df['support']       = self.stat_df['average_score'] <= self.stat_df['average_score'].mean()
 
-        # K features with highest score
+        # K features with lowest score (MSE)
         if self.k is not None:
             rank_df = self.stat_df.copy()
             rank_df['k_support'] = True
@@ -62,7 +62,8 @@ class DFMSEThreshold(BaseEstimator, TransformerMixin):
         if self.transform_cols is None:
             raise NotFittedError(f"This {self.__class__.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.")
 
-        features = self.stat_df[self.stat_df['support']].sort_values(by='average_score')['feature'].values
+        support  = 'support' if self.k is None else 'k_support'
+        features = self.stat_df[self.stat_df[support]].sort_values(by='average_score')['feature'].values
         new_X    = X[features].copy()
 
         return new_X
