@@ -8,11 +8,12 @@ import numpy as np
 from tqdm import tqdm
 
 class DFROCAUCThreshold(BaseEstimator, TransformerMixin):
-    def __init__(self, columns=None, threshold=.5, estimator=RandomForestClassifier(), cv=RepeatedStratifiedKFold()):
+    def __init__(self, columns=None, threshold=.5, estimator=RandomForestClassifier(), cv=RepeatedStratifiedKFold(), multi_class='raise'):
         self.columns        = columns
         self.threshold      = threshold
         self.estimator      = estimator
         self.cv             = cv
+        self.multi_class    = multi_class
         self.transform_cols = None
         self.stat_df        = None
         
@@ -32,9 +33,13 @@ class DFROCAUCThreshold(BaseEstimator, TransformerMixin):
                 X_test  = X.loc[test_index][[column]]
                 y_test  = y.loc[test_index]
 
+                if self.multi_class in ['ovo', 'ovr']:
+                    y_train = pd.get_dummies(y_train)
+                    y_test  = pd.get_dummies(y_test)
+
                 self.estimator.fit(X_train, y_train)
                 y_pred = self.estimator.predict(X_test)
-                scores.append(round(roc_auc_score(y_test, y_pred), 5))
+                scores.append(round(roc_auc_score(y_test, y_pred, multi_class=self.multi_class), 5))
                 splits.set_description(f'Cross-Validation[{column}]')
 
             cv_scores.append(scores)
