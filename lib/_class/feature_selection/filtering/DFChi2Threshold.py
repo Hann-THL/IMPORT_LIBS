@@ -25,8 +25,8 @@ class DFChi2Threshold(BaseEstimator, TransformerMixin):
         splits      = tqdm(self.cv.split(X, y))
 
         for train_index, test_index in splits:
-            X_sample = X.loc[np.append(train_index, test_index)][self.transform_cols]
-            y_sample = y.loc[np.append(train_index, test_index)]
+            X_sample = X.loc[train_index][self.transform_cols]
+            y_sample = y.loc[train_index]
             
             self.selector.fit(X_sample, y_sample)
             cv_scores.append(self.selector.scores_)
