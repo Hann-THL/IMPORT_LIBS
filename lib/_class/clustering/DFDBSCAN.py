@@ -90,6 +90,7 @@ class DFDBSCAN(BaseEstimator, ClusterMixin):
 
         new_X = X.copy()
         new_X[self.cluster_name] = self.model.fit_predict(X[self.transform_cols])
+        new_X[self.cluster_name] = 'Cluster ' + new_X[self.cluster_name].astype(str)
 
         return new_X
     
