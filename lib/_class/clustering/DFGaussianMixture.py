@@ -27,6 +27,15 @@ class DFGaussianMixture(BaseEstimator, ClusterMixin):
         self.transform_cols = [x for x in X.columns if x in self.columns]
         self.model.fit(X[self.transform_cols])
 
+        self.centroid_df    = pd.DataFrame(
+            self.__calc_centroids(self.model, X[self.transform_cols]),
+            columns=self.transform_cols
+        )
+        self.centroid_df['Cluster'] = [f'Cluster {x}' for x in self.centroid_df.index]
+        self.centroid_df.set_index('Cluster', inplace=True)
+        self.centroid_df.index.name = None
+
+        # Evaluation
         self.eval_df = pd.DataFrame({
             'n_cluster': [x+1 for x in range(self.model.n_components)]
         })
@@ -50,12 +59,7 @@ class DFGaussianMixture(BaseEstimator, ClusterMixin):
                 self.eval_df.at[x, 'converged'] = model.converged_
 
                 # Cluster centroid
-                # Reference: https://stackoverflow.com/questions/47412749/how-can-i-get-a-representative-point-of-a-gmm-cluster
-                centroids = np.empty(shape=(model.n_components, tmp_X.shape[1]))
-                for n in range(model.n_components):
-                    density         = multivariate_normal(mean=model.means_[n], cov=model.covariances_[n]).logpdf(tmp_X)
-                    centroids[n, :] = tmp_X.loc[np.argmax(density)].values
-                self.eval_df.at[x, 'centroid'] = centroids
+                self.eval_df.at[x, 'centroid'] = self.__calc_centroids(model, tmp_X)
 
                 # Reference: https://jakevdp.github.io/PythonDataScienceHandbook/05.12-gaussian-mixtures.html
                 if self.eval_aic:
@@ -93,6 +97,15 @@ class DFGaussianMixture(BaseEstimator, ClusterMixin):
 
         return self
     
+    def __calc_centroids(self, model, X):
+        # Reference: https://stackoverflow.com/questions/47412749/how-can-i-get-a-representative-point-of-a-gmm-cluster
+        centroids = np.empty(shape=(model.n_components, X.shape[1]))
+        for n in range(model.n_components):
+            density         = multivariate_normal(mean=model.means_[n], cov=model.covariances_[n]).logpdf(X)
+            centroids[n, :] = X.loc[np.argmax(density)].values
+
+        return centroids
+
     def predict(self, X):
         if self.transform_cols is None:
             raise NotFittedError(f"This {self.__class__.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.")
@@ -105,3 +118,17 @@ class DFGaussianMixture(BaseEstimator, ClusterMixin):
     
     def fit_predict(self, X, y=None):
         return self.fit(X).predict(X)
+
+    def predict_proba(self, X):
+        if self.transform_cols is None:
+            raise NotFittedError(f"This {self.__class__.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.")
+
+        new_X = pd.concat([
+            X,
+            pd.DataFrame(
+                self.model.predict_proba(X[self.transform_cols]),
+                columns=[f'{self.cluster_name} Cluster {x}' for x in range(len(self.centroid_df))]
+            )
+        ], axis=1)
+
+        return new_X

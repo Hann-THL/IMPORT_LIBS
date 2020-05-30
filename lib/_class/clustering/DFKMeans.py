@@ -2,6 +2,7 @@ from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.exceptions import NotFittedError
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
+from sklearn.neighbors import DistanceMetric
 import pandas as pd
 import numpy as np
 import copy
@@ -25,6 +26,15 @@ class DFKMeans(BaseEstimator, ClusterMixin):
         self.transform_cols = [x for x in X.columns if x in self.columns]
         self.model.fit(X[self.transform_cols])
 
+        self.centroid_df    = pd.DataFrame(
+            self.model.cluster_centers_,
+            columns=self.transform_cols
+        )
+        self.centroid_df['Cluster'] = [f'Cluster {x}' for x in np.unique(self.model.labels_)]
+        self.centroid_df.set_index('Cluster', inplace=True)
+        self.centroid_df.index.name = None
+
+        # Evaluation
         self.eval_df = pd.DataFrame({
             'n_cluster': [x+1 for x in range(self.model.n_clusters)],
         })
@@ -84,6 +94,23 @@ class DFKMeans(BaseEstimator, ClusterMixin):
         new_X[self.cluster_name] = 'Cluster ' + new_X[self.cluster_name].astype(str)
 
         return new_X
-    
+
     def fit_predict(self, X, y=None):
         return self.fit(X).predict(X)
+
+    def predict_proba(self, X):
+        if self.transform_cols is None:
+            raise NotFittedError(f"This {self.__class__.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.")
+
+        # Measure distance to centroid
+        prob_df = pd.DataFrame(
+            DistanceMetric.get_metric('euclidean').pairwise(X[self.transform_cols], self.centroid_df),
+            columns=[f'{self.cluster_name} Cluster {x}' for x in range(len(self.centroid_df))]
+        )
+        # Convert to probability
+        prob_df = prob_df.divide(prob_df.sum(axis=1), axis=0)
+        prob_df = 1 - prob_df
+
+        new_X = pd.concat([X, prob_df], axis=1)
+
+        return new_X
