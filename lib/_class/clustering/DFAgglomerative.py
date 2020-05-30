@@ -2,6 +2,7 @@ from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.exceptions import NotFittedError
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
+from sklearn.neighbors import NearestCentroid
 import pandas as pd
 import numpy as np
 import copy
@@ -25,6 +26,18 @@ class DFAgglomerative(BaseEstimator, ClusterMixin):
         self.transform_cols = [x for x in X.columns if x in self.columns]
         self.model.fit(X[self.transform_cols])
 
+        self.centroid_df    = pd.DataFrame(
+            self.__calc_centroids(
+                X[self.transform_cols],
+                self.model.fit_predict(X[self.transform_cols])
+            ),
+            columns=self.transform_cols
+        )
+        self.centroid_df['Cluster'] = [f'Cluster {x}' for x in np.unique(self.model.labels_)]
+        self.centroid_df.set_index('Cluster', inplace=True)
+        self.centroid_df.index.name = None
+
+        # Evaluation
         self.eval_df = pd.DataFrame({
             'n_cluster': [x+1 for x in range(self.model.n_clusters)],
         })
@@ -34,11 +47,16 @@ class DFAgglomerative(BaseEstimator, ClusterMixin):
             chis        = []
             dbis        = []
 
+            self.eval_df['centroid'] = self.eval_df['n_cluster'].apply(lambda x: [])
+
             tmp_X = X[self.transform_cols].copy()
             for x in range(self.model.n_clusters):
                 model = copy.deepcopy(self.model)
                 model.n_clusters = x+1
                 model.fit(tmp_X)
+
+                # Cluster centroid
+                self.eval_df.at[x, 'centroid'] = self.__calc_centroids(tmp_X, model.fit_predict(tmp_X))
 
                 # Reference: https://towardsdatascience.com/clustering-metrics-better-than-the-elbow-method-6926e1f723a6
                 if self.eval_silhouette:
@@ -63,6 +81,13 @@ class DFAgglomerative(BaseEstimator, ClusterMixin):
 
         return self
     
+    def __calc_centroids(self, X, y):
+        if len(np.unique(y)) <= 1:
+            return []
+
+        # Reference: https://stackoverflow.com/questions/56456572/how-to-get-agglomerative-clustering-centroid-in-python-scikit-learn
+        return NearestCentroid().fit(X, y).centroids_
+
     # NOTE: AgglomerativeClustering does not have predict()
     def __predict(self, X):
         if self.transform_cols is None:

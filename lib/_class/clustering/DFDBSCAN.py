@@ -2,6 +2,7 @@ from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.exceptions import NotFittedError
 from sklearn.cluster import DBSCAN
 from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
+from sklearn.neighbors import NearestCentroid
 import pandas as pd
 import numpy as np
 import copy
@@ -31,6 +32,18 @@ class DFDBSCAN(BaseEstimator, ClusterMixin):
         self.transform_cols = [x for x in X.columns if x in self.columns]
         self.model.fit(X[self.transform_cols])
 
+        self.centroid_df    = pd.DataFrame(
+            self.__calc_centroids(
+                X[self.transform_cols],
+                self.model.fit_predict(X[self.transform_cols])
+            ),
+            columns=self.transform_cols
+        )
+        self.centroid_df['Cluster'] = [f'Cluster {x}' for x in np.unique(self.model.labels_)]
+        self.centroid_df.set_index('Cluster', inplace=True)
+        self.centroid_df.index.name = None
+
+        # Evaluation
         self.eval_df = pd.DataFrame()
 
         if any([self.eval_cluster, self.eval_silhouette, self.eval_chi, self.eval_dbi]):
@@ -83,6 +96,13 @@ class DFDBSCAN(BaseEstimator, ClusterMixin):
 
         return self
     
+    def __calc_centroids(self, X, y):
+        if len(np.unique(y)) <= 1:
+            return []
+
+        # Reference: https://stackoverflow.com/questions/56456572/how-to-get-agglomerative-clustering-centroid-in-python-scikit-learn
+        return NearestCentroid().fit(X, y).centroids_
+
     # NOTE: DBSCAN does not have predict()
     def __predict(self, X):
         if self.transform_cols is None:
