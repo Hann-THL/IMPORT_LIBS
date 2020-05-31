@@ -10,17 +10,18 @@ import copy
 
 class DFAgglomerative(BaseEstimator, ClusterMixin):
     def __init__(self, cluster_name, columns=None, random_state=None,
-                 eval_silhouette=False, eval_chi=False, eval_dbi=False,
+                 eval_silhouette=False, eval_chi=False, eval_dbi=False, eval_sample_size=None,
                  **kwargs):
-        self.cluster_name    = cluster_name
-        self.columns         = columns
-        self.random_state    = random_state
-        self.model           = AgglomerativeClustering(**kwargs)
-        self.eval_silhouette = eval_silhouette
-        self.eval_chi        = eval_chi
-        self.eval_dbi        = eval_dbi
-        self.transform_cols  = None
-        self.eval_df         = None
+        self.cluster_name     = cluster_name
+        self.columns          = columns
+        self.random_state     = random_state
+        self.model            = AgglomerativeClustering(**kwargs)
+        self.eval_silhouette  = eval_silhouette
+        self.eval_chi         = eval_chi
+        self.eval_dbi         = eval_dbi
+        self.eval_sample_size = eval_sample_size
+        self.transform_cols   = None
+        self.eval_df          = None
         
     def fit(self, X, y=None):
         self.columns        = X.columns if self.columns is None else self.columns
@@ -61,7 +62,7 @@ class DFAgglomerative(BaseEstimator, ClusterMixin):
 
                 # Reference: https://towardsdatascience.com/clustering-metrics-better-than-the-elbow-method-6926e1f723a6
                 if self.eval_silhouette:
-                    silhouettes.append(np.nan if x == 0 else silhouette_score(tmp_X, model.labels_, metric='euclidean', random_state=self.random_state))
+                    silhouettes.append(np.nan if x == 0 else silhouette_score(tmp_X, model.labels_, sample_size=self.eval_sample_size, metric='euclidean', random_state=self.random_state))
 
                 # Reference: https://stats.stackexchange.com/questions/52838/what-is-an-acceptable-value-of-the-calinski-harabasz-ch-criterion
                 if self.eval_chi:

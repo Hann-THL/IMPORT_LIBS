@@ -10,18 +10,19 @@ import copy
 
 class DFGaussianMixture(BaseEstimator, ClusterMixin):
     def __init__(self, cluster_name, columns=None,
-                 eval_aic=False, eval_bic=False, eval_silhouette=False, eval_chi=False, eval_dbi=False,
+                 eval_aic=False, eval_bic=False, eval_silhouette=False, eval_chi=False, eval_dbi=False, eval_sample_size=None,
                  **kwargs):
-        self.cluster_name    = cluster_name
-        self.columns         = columns
-        self.model           = GaussianMixture(**kwargs)
-        self.eval_aic        = eval_aic
-        self.eval_bic        = eval_bic
-        self.eval_silhouette = eval_silhouette
-        self.eval_chi        = eval_chi
-        self.eval_dbi        = eval_dbi
-        self.transform_cols  = None
-        self.eval_df         = None
+        self.cluster_name     = cluster_name
+        self.columns          = columns
+        self.model            = GaussianMixture(**kwargs)
+        self.eval_aic         = eval_aic
+        self.eval_bic         = eval_bic
+        self.eval_silhouette  = eval_silhouette
+        self.eval_chi         = eval_chi
+        self.eval_dbi         = eval_dbi
+        self.eval_sample_size = eval_sample_size
+        self.transform_cols   = None
+        self.eval_df          = None
         
     def fit(self, X, y=None):
         self.columns        = X.columns if self.columns is None else self.columns
@@ -71,7 +72,7 @@ class DFGaussianMixture(BaseEstimator, ClusterMixin):
 
                 # Reference: https://towardsdatascience.com/clustering-metrics-better-than-the-elbow-method-6926e1f723a6
                 if self.eval_silhouette:
-                    silhouettes.append(np.nan if x == 0 else silhouette_score(tmp_X, model.predict(tmp_X), metric='euclidean', random_state=model.random_state))
+                    silhouettes.append(np.nan if x == 0 else silhouette_score(tmp_X, model.predict(tmp_X), sample_size=self.eval_sample_size, metric='euclidean', random_state=model.random_state))
 
                 # Reference: https://stats.stackexchange.com/questions/52838/what-is-an-acceptable-value-of-the-calinski-harabasz-ch-criterion
                 if self.eval_chi:

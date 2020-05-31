@@ -11,7 +11,7 @@ import copy
 # Reference: https://towardsdatascience.com/dbscan-clustering-for-data-shapes-k-means-cant-handle-well-in-python-6be89af4e6ea
 class DFDBSCAN(BaseEstimator, ClusterMixin):
     def __init__(self, cluster_name, columns=None, random_state=None,
-                 eps_samples_tuples=None, eval_cluster=False, eval_silhouette=False, eval_chi=False, eval_dbi=False,
+                 eps_samples_tuples=None, eval_cluster=False, eval_silhouette=False, eval_chi=False, eval_dbi=False, eval_sample_size=None,
                  **kwargs):
         if any([eval_cluster, eval_silhouette, eval_chi, eval_dbi]):
             assert eps_samples_tuples is not None, 'eps_samples_tuples should consists of [(eps, min_samples)] for DBSCAN evaluation.'
@@ -25,6 +25,7 @@ class DFDBSCAN(BaseEstimator, ClusterMixin):
         self.eval_silhouette    = eval_silhouette
         self.eval_chi           = eval_chi
         self.eval_dbi           = eval_dbi
+        self.eval_sample_size   = eval_sample_size
         self.transform_cols     = None
         self.eval_df            = None
         
@@ -72,7 +73,7 @@ class DFDBSCAN(BaseEstimator, ClusterMixin):
 
                 # Reference: https://towardsdatascience.com/clustering-metrics-better-than-the-elbow-method-6926e1f723a6
                 if self.eval_silhouette:
-                    silhouettes.append(np.nan if n_cluster == 1 else silhouette_score(tmp_X, model.labels_, metric='euclidean', random_state=self.random_state))
+                    silhouettes.append(np.nan if n_cluster == 1 else silhouette_score(tmp_X, model.labels_, sample_size=self.eval_sample_size, metric='euclidean', random_state=self.random_state))
 
                 # Reference: https://stats.stackexchange.com/questions/52838/what-is-an-acceptable-value-of-the-calinski-harabasz-ch-criterion
                 if self.eval_chi:
