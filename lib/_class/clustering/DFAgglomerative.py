@@ -3,6 +3,7 @@ from sklearn.exceptions import NotFittedError
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
 from sklearn.neighbors import NearestCentroid
+from tqdm import tqdm
 import pandas as pd
 import numpy as np
 import copy
@@ -50,7 +51,7 @@ class DFAgglomerative(BaseEstimator, ClusterMixin):
             self.eval_df['centroid'] = self.eval_df['n_cluster'].apply(lambda x: [])
 
             tmp_X = X[self.transform_cols].copy()
-            for x in range(self.model.n_clusters):
+            for x in tqdm(range(self.model.n_clusters)):
                 model = copy.deepcopy(self.model)
                 model.n_clusters = x+1
                 model.fit(tmp_X)

@@ -3,6 +3,7 @@ from sklearn.exceptions import NotFittedError
 from sklearn.cluster import DBSCAN
 from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
 from sklearn.neighbors import NearestCentroid
+from tqdm import tqdm
 import pandas as pd
 import numpy as np
 import copy
@@ -57,7 +58,7 @@ class DFDBSCAN(BaseEstimator, ClusterMixin):
             self.eval_df['min_samples'] = [x[1] for x in self.eps_samples_tuples]
 
             tmp_X = X[self.transform_cols].copy()
-            for index, (eps, min_samples) in enumerate(self.eps_samples_tuples):
+            for index, (eps, min_samples) in tqdm(enumerate(self.eps_samples_tuples)):
                 model = copy.deepcopy(self.model)
                 model.eps = eps
                 model.min_samples = min_samples
