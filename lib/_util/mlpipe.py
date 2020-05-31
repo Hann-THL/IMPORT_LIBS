@@ -41,5 +41,5 @@ def eval_classif(y_true, y_pred, multi_class='raise'):
     print(cofmat_df)
     print()
     print(classification_report(y_true, y_pred, digits=5))
-    print(f'ROC-AUC: {roc_auc : .5f}')
+    print(f'ROC-AUC: {roc_auc :.5f}')
     print(f'Kappa:   {kappa :.5f}')
