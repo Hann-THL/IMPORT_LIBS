@@ -22,30 +22,22 @@ class DFKMeans(BaseEstimator, ClusterMixin):
         self.eval_sample_size = eval_sample_size
         self.transform_cols   = None
         self.eval_df          = None
+        self.centroid_df      = None
         
     def fit(self, X, y=None):
         self.columns        = X.columns if self.columns is None else self.columns
         self.transform_cols = [x for x in X.columns if x in self.columns]
-        self.model.fit(X[self.transform_cols])
-
-        self.centroid_df    = pd.DataFrame(
-            self.model.cluster_centers_,
-            columns=self.transform_cols
-        )
-        self.centroid_df['Cluster'] = [f'Cluster {x}' for x in np.unique(self.model.labels_)]
-        self.centroid_df.set_index('Cluster', inplace=True)
-        self.centroid_df.index.name = None
 
         # Evaluation
-        self.eval_df = pd.DataFrame({
-            'n_cluster': [x+1 for x in range(self.model.n_clusters)],
-        })
-
         if any([self.eval_inertia, self.eval_silhouette, self.eval_chi, self.eval_dbi]):
             inertias    = []
             silhouettes = []
             chis        = []
             dbis        = []
+
+            self.eval_df = pd.DataFrame({
+                'n_cluster': [x+1 for x in range(self.model.n_clusters)],
+            })
             self.eval_df['centroid'] = self.eval_df['n_cluster'].apply(lambda x: [])
 
             tmp_X = X[self.transform_cols].copy()
@@ -84,6 +76,18 @@ class DFKMeans(BaseEstimator, ClusterMixin):
 
             if self.eval_dbi:
                 self.eval_df['davies_bouldin'] = dbis
+
+        # Train
+        else:
+            self.model.fit(X[self.transform_cols])
+
+            self.centroid_df = pd.DataFrame(
+                self.model.cluster_centers_,
+                columns=self.transform_cols
+            )
+            self.centroid_df['Cluster'] = [f'Cluster {x}' for x in np.unique(self.model.labels_)]
+            self.centroid_df.set_index('Cluster', inplace=True)
+            self.centroid_df.index.name = None
 
         return self
     

@@ -28,26 +28,13 @@ class DFDBSCAN(BaseEstimator, ClusterMixin):
         self.eval_sample_size   = eval_sample_size
         self.transform_cols     = None
         self.eval_df            = None
+        self.centroid_df        = None
         
     def fit(self, X, y=None):
         self.columns        = X.columns if self.columns is None else self.columns
         self.transform_cols = [x for x in X.columns if x in self.columns]
-        self.model.fit(X[self.transform_cols])
-
-        self.centroid_df    = pd.DataFrame(
-            self.__calc_centroids(
-                X[self.transform_cols],
-                self.model.fit_predict(X[self.transform_cols])
-            ),
-            columns=self.transform_cols
-        )
-        self.centroid_df['Cluster'] = [f'Cluster {x}' for x in np.unique(self.model.labels_)]
-        self.centroid_df.set_index('Cluster', inplace=True)
-        self.centroid_df.index.name = None
 
         # Evaluation
-        self.eval_df = pd.DataFrame()
-
         if any([self.eval_cluster, self.eval_silhouette, self.eval_chi, self.eval_dbi]):
             n_clusters  = []
             n_noises    = []
@@ -55,6 +42,7 @@ class DFDBSCAN(BaseEstimator, ClusterMixin):
             chis        = []
             dbis        = []
 
+            self.eval_df                = pd.DataFrame()
             self.eval_df['eps']         = [x[0] for x in self.eps_samples_tuples]
             self.eval_df['min_samples'] = [x[1] for x in self.eps_samples_tuples]
 
@@ -95,6 +83,21 @@ class DFDBSCAN(BaseEstimator, ClusterMixin):
 
             if self.eval_dbi:
                 self.eval_df['davies_bouldin'] = dbis
+
+        # Train
+        else:
+            self.model.fit(X[self.transform_cols])
+
+            self.centroid_df = pd.DataFrame(
+                self.__calc_centroids(
+                    X[self.transform_cols],
+                    self.model.fit_predict(X[self.transform_cols])
+                ),
+                columns=self.transform_cols
+            )
+            self.centroid_df['Cluster'] = [f'Cluster {x}' for x in np.unique(self.model.labels_)]
+            self.centroid_df.set_index('Cluster', inplace=True)
+            self.centroid_df.index.name = None
 
         return self
     
