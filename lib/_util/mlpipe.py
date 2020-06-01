@@ -26,7 +26,7 @@ def dataset_split(X, y, reset_index=True, **kwargs):
 
 
 # EVALUATION
-def eval_classif(y_true, y_pred, multi_class='raise'):
+def eval_classif(y_true, y_pred, multi_class='raise', return_evaluation=False):
     cofmat_df = pd.DataFrame(confusion_matrix(y_true, y_pred))
     cofmat_df.index.name   = 'True'
     cofmat_df.columns.name = 'Pred'
@@ -43,3 +43,10 @@ def eval_classif(y_true, y_pred, multi_class='raise'):
     print(classification_report(y_true, y_pred, digits=5))
     print(f'ROC-AUC: {roc_auc :.5f}')
     print(f'Kappa:   {kappa :.5f}')
+
+    if return_evaluation:
+        return {
+            'report':  classification_report(y_true, y_pred, digits=5, output_dict=True),
+            'roc_auc': roc_auc,
+            'kappa':   kappa
+        }
