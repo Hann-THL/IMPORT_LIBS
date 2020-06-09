@@ -37,20 +37,20 @@ def eval_classif(y_true, y_pred, y_prob=None, multi_class='raise', return_evalua
     y_prob  = y_pred if y_prob is None else y_prob
     roc_auc = roc_auc_score(y_true, y_prob, multi_class=multi_class)
     precision, recall, _ = precision_recall_curve(y_true, y_prob)
-    auc_score            = auc(recall, precision)
+    pr_auc               = auc(recall, precision)
 
     if show_evaluation:
         print(cofmat_df)
         print()
         print(classification_report(y_true, y_pred, digits=5))
         print(f'ROC-AUC: {roc_auc :.5f}')
-        print(f'AUC:     {auc_score :.5f}')
+        print(f'PR AUC:  {pr_auc :.5f}')
         print(f'Kappa:   {kappa :.5f}')
 
     if return_evaluation:
         return {
             'report':  classification_report(y_true, y_pred, digits=5, output_dict=True),
             'roc_auc': roc_auc,
-            'auc':     auc_score,
+            'pr_auc':  pr_auc,
             'kappa':   kappa
         }
