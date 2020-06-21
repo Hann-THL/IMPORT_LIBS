@@ -88,6 +88,7 @@ def eval_classif(y_true, y_pred, y_prob=None, multi_class='raise', return_evalua
 
     if return_evaluation:
         return {
+            'matrix':  cofmat_df,
             'report':  classification_report(y_true, y_pred, digits=5, output_dict=True),
             'roc_auc': roc_auc,
             'pr_auc':  pr_auc,
