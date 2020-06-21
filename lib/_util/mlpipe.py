@@ -62,6 +62,8 @@ def class_ratio(y, rounding=None, normalize=False):
 
 # EVALUATION
 def eval_classif(y_true, y_pred, y_prob=None, multi_class='raise', return_evaluation=False, show_evaluation=True):
+    is_binary = y_true.nunique() == 2
+
     cofmat_df = pd.DataFrame(confusion_matrix(y_true, y_pred))
     cofmat_df.index.name   = 'True'
     cofmat_df.columns.name = 'Pred'
@@ -70,8 +72,11 @@ def eval_classif(y_true, y_pred, y_prob=None, multi_class='raise', return_evalua
     # Reference: https://machinelearningmastery.com/roc-curves-and-precision-recall-curves-for-classification-in-python/
     y_prob  = y_pred if y_prob is None else y_prob
     roc_auc = roc_auc_score(y_true, y_prob, multi_class=multi_class)
-    precision, recall, _ = precision_recall_curve(y_true, y_prob)
-    pr_auc               = auc(recall, precision)
+
+    pr_auc = np.NaN
+    if is_binary:
+        precision, recall, _ = precision_recall_curve(y_true, y_prob)
+        pr_auc               = auc(recall, precision)
 
     if show_evaluation:
         print(cofmat_df)
