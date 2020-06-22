@@ -239,7 +239,7 @@ def box(df, title='Box', color=None,
     columns = [x for x in columns if x != color]
 
     data_groups = []
-    groups      = [1] if color is None else np.unique(df[color])
+    groups      = [1] if color is None else df[color].unique()
 
     for column in columns:
         data   = []
