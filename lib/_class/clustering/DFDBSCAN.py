@@ -10,7 +10,7 @@ import copy
 
 # Reference: https://towardsdatascience.com/dbscan-clustering-for-data-shapes-k-means-cant-handle-well-in-python-6be89af4e6ea
 class DFDBSCAN(BaseEstimator, ClusterMixin):
-    def __init__(self, cluster_name, columns=None, random_state=None,
+    def __init__(self, cluster_name='DBSCAN', columns=None, random_state=None,
                  eps_samples_tuples=None, eval_cluster=False, eval_silhouette=False, eval_chi=False, eval_dbi=False, eval_sample_size=None,
                  **kwargs):
         if any([eval_cluster, eval_silhouette, eval_chi, eval_dbi]):

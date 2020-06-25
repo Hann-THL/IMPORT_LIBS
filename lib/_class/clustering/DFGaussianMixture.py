@@ -9,7 +9,7 @@ import numpy as np
 import copy
 
 class DFGaussianMixture(BaseEstimator, ClusterMixin):
-    def __init__(self, cluster_name, columns=None,
+    def __init__(self, cluster_name='GMM', columns=None,
                  eval_aic=False, eval_bic=False, eval_silhouette=False, eval_chi=False, eval_dbi=False, eval_sample_size=None,
                  **kwargs):
         self.cluster_name     = cluster_name

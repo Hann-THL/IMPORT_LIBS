@@ -9,7 +9,7 @@ import numpy as np
 import copy
 
 class DFKMeans(BaseEstimator, ClusterMixin):
-    def __init__(self, cluster_name, columns=None,
+    def __init__(self, cluster_name='KMeans', columns=None,
                  eval_inertia=False, eval_silhouette=False, eval_chi=False, eval_dbi=False, eval_sample_size=None,
                  **kwargs):
         self.cluster_name     = cluster_name
