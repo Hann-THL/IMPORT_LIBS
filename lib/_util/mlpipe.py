@@ -6,6 +6,7 @@ from sklearn.utils.class_weight import compute_class_weight
 
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
 
 
 
@@ -15,6 +16,53 @@ def xy_split(df, target):
     y = df[target].copy()
 
     return X, y
+
+# Reference:
+# - https://www.kaggle.com/arjanso/reducing-dataframe-memory-size-by-65
+# - https://www.kaggle.com/gemartin/load-data-reduce-memory-usage
+def reduce_memory_usage(df):
+    def mb_memory(df):
+        return df.memory_usage().sum() / 1024**2
+    
+    new_df = df.copy()
+    original_memory = mb_memory(new_df)
+    print(f'Original memory usage:  {original_memory :.2f} MB')
+
+    for column in tqdm(new_df.select_dtypes(include=['number', 'object']).columns):
+        dtype = new_df[column].dtype.name.lower()
+
+        # Object fields
+        if dtype == 'object':
+            new_df[column] = new_df[column].astype('category')
+            continue
+
+        min_value = new_df[column].min()
+        max_value = new_df[column].max()
+
+        # Integer fields
+        if dtype.startswith('int'):
+            # Exclude fields with missing values
+            if new_df[column].isna().sum() != 0:
+                continue
+
+            for dtype in [np.uint8, np.uint16, np.uint32, np.uint64,
+                          np.int8, np.int16, np.int32, np.int64]:
+                if min_value >= np.iinfo(dtype).min and max_value <= np.iinfo(dtype).max:
+                    new_df[column] = new_df[column].astype(dtype)
+                    break
+        
+        # Decimal fields
+        else:
+            for dtype in [np.float16, np.float32, np.float64]:
+                if min_value >= np.finfo(dtype).min and max_value <= np.finfo(dtype).max:
+                    new_df[column] = new_df[column].astype(dtype)
+                    break
+
+    optimize_memory = mb_memory(new_df)
+    print(f'Optimized memory usage: {optimize_memory :.2f} MB')
+    print(f'Memory decreased by {(original_memory - optimize_memory) / original_memory * 100:.2f} %')
+    
+    return new_df
 
 def dataset_split(X, y, reset_index=True, **kwargs):
     X_train, X_test, y_train, y_test = train_test_split(X, y, **kwargs)
