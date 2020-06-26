@@ -506,6 +506,21 @@ def distmat(df, target, title='Distribution Matrix',
         to_image=to_image
     )
 
+def missmat(df, title='Missing Matrix',
+            out_path=None, layout_kwargs={}, to_image=False):
+    
+    missing_df = df.isna().astype(int)
+    
+    vp.heatmap(
+        x=missing_df.columns,
+        y=missing_df.index,
+        z=missing_df.values,
+        title=title,
+        out_path=out_path,
+        layout_kwargs=layout_kwargs,
+        to_image=to_image
+    )
+
 # Reference: https://stackoverflow.com/questions/38452379/plotting-a-dendrogram-using-plotly-python
 def dendrogram(df, title='Dendrogram',
                out_path=None, layout_kwargs={}, to_image=False):
