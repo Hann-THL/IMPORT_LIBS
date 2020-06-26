@@ -25,8 +25,6 @@ def reduce_memory_usage(df):
         return df.memory_usage().sum() / 1024**2
     
     new_df = df.copy()
-    original_memory = mb_memory(new_df)
-    print(f'Original memory usage:  {original_memory :.2f} MB')
 
     for column in tqdm(new_df.select_dtypes(include=['number', 'object']).columns):
         dtype = new_df[column].dtype.name.lower()
@@ -58,9 +56,11 @@ def reduce_memory_usage(df):
                     new_df[column] = new_df[column].astype(dtype)
                     break
 
+    initial_memory  = mb_memory(df)
     optimize_memory = mb_memory(new_df)
+    print(f'Initial memory usage:   {initial_memory :.2f} MB')
     print(f'Optimized memory usage: {optimize_memory :.2f} MB')
-    print(f'Memory decreased by {(original_memory - optimize_memory) / original_memory * 100:.2f} %')
+    print(f'Memory optimized by {(initial_memory - optimize_memory) / initial_memory * 100:.2f} %')
     
     return new_df
 
