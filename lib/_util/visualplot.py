@@ -517,7 +517,7 @@ def missmat(df, title='Missing Matrix',
     
     missing_df = df.isna().astype(int)
     
-    vp.heatmap(
+    heatmap(
         x=missing_df.columns,
         y=missing_df.index,
         z=missing_df.values,
