@@ -11,7 +11,8 @@ import copy
 # Reference: https://towardsdatascience.com/dbscan-clustering-for-data-shapes-k-means-cant-handle-well-in-python-6be89af4e6ea
 class DFDBSCAN(BaseEstimator, ClusterMixin):
     def __init__(self, cluster_name='DBSCAN', columns=None, random_state=None,
-                 eps_samples_tuples=None, eval_cluster=False, eval_silhouette=False, eval_chi=False, eval_dbi=False, eval_sample_size=None,
+                 eps_samples_tuples=None, eval_cluster=False, eval_silhouette=False, eval_chi=False, eval_dbi=False,
+                 eval_sample_size=None, eval_exclude_noise=False,
                  **kwargs):
         if any([eval_cluster, eval_silhouette, eval_chi, eval_dbi]):
             assert eps_samples_tuples is not None, 'eps_samples_tuples should consists of [(eps, min_samples)] for DBSCAN evaluation.'
@@ -26,6 +27,7 @@ class DFDBSCAN(BaseEstimator, ClusterMixin):
         self.eval_chi           = eval_chi
         self.eval_dbi           = eval_dbi
         self.eval_sample_size   = eval_sample_size
+        self.eval_exclude_noise = eval_exclude_noise
         self.transform_cols     = None
         self.eval_df            = None
         self.centroid_df        = None
@@ -53,23 +55,31 @@ class DFDBSCAN(BaseEstimator, ClusterMixin):
                 model.min_samples = min_samples
                 model.fit(tmp_X)
 
+                eval_X      = tmp_X.copy()
+                eval_labels = model.labels_
+                if self.eval_exclude_noise:
+                    eval_X      = pd.concat([eval_X, pd.Series(eval_labels, name='Cluster')], axis=1)
+                    eval_labels = eval_X[eval_X['Cluster'] != -1]['Cluster'].values
+                    eval_X      = eval_X[eval_X['Cluster'] != -1].drop(columns=['Cluster']).values
+
                 # Reference: https://scikit-learn.org/stable/auto_examples/cluster/plot_dbscan.html
-                n_cluster = len(np.unique(model.labels_))
+                n_cluster      = len(np.unique(model.labels_))
+                n_eval_cluster = len(np.unique(eval_labels))
                 if self.eval_cluster:
                     n_clusters.append(n_cluster)
                     n_noises.append(np.sum(np.where(model.labels_ == -1, 1, 0)))
 
                 # Reference: https://towardsdatascience.com/clustering-metrics-better-than-the-elbow-method-6926e1f723a6
                 if self.eval_silhouette:
-                    silhouettes.append(np.nan if n_cluster == 1 else silhouette_score(tmp_X, model.labels_, sample_size=self.eval_sample_size, metric='euclidean', random_state=self.random_state))
+                    silhouettes.append(np.nan if n_eval_cluster <= 1 else silhouette_score(eval_X, eval_labels, sample_size=self.eval_sample_size, metric='euclidean', random_state=self.random_state))
 
                 # Reference: https://stats.stackexchange.com/questions/52838/what-is-an-acceptable-value-of-the-calinski-harabasz-ch-criterion
                 if self.eval_chi:
-                    chis.append(np.nan if n_cluster == 1 else calinski_harabasz_score(tmp_X, model.labels_))
+                    chis.append(np.nan if n_eval_cluster <= 1 else calinski_harabasz_score(eval_X, eval_labels))
 
                 # Reference: https://stackoverflow.com/questions/59279056/davies-bouldin-index-higher-or-lower-score-better
                 if self.eval_dbi:
-                    dbis.append(np.nan if n_cluster == 1 else davies_bouldin_score(tmp_X, model.labels_))
+                    dbis.append(np.nan if n_eval_cluster <= 1 else davies_bouldin_score(eval_X, eval_labels))
 
             if self.eval_cluster:
                 self.eval_df['n_cluster'] = n_clusters
