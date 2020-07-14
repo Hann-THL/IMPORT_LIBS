@@ -6,7 +6,6 @@ from sklearn.utils.class_weight import compute_class_weight
 
 import pandas as pd
 import numpy as np
-from tqdm import tqdm
 
 
 
@@ -16,46 +15,6 @@ def xy_split(df, target):
     y = df[target].copy()
 
     return X, y
-
-# Reference:
-# - https://www.kaggle.com/arjanso/reducing-dataframe-memory-size-by-65
-# - https://www.kaggle.com/gemartin/load-data-reduce-memory-usage
-def reduce_memory_usage(df):
-    def mb_memory(df):
-        return df.memory_usage().sum() / 1024**2
-    
-    new_df = df.copy()
-
-    for column in tqdm(new_df.select_dtypes(include=['number', 'object']).columns):
-        dtype = new_df[column].dtype.name.lower()
-
-        # Object fields
-        if dtype == 'object':
-            new_df[column] = new_df[column].astype('category')
-            continue
-
-        for downcast in ['unsigned', 'signed', 'integer', 'float']:
-            series = pd.to_numeric(new_df[column], downcast=downcast)
-            if series.dtype.name.lower() != dtype:
-                new_df[column] = series
-                break
-
-    initial_memory  = mb_memory(df)
-    optimize_memory = mb_memory(new_df)
-    print(f'Initial memory usage:   {initial_memory :.2f} MB')
-    print(f'Optimized memory usage: {optimize_memory :.2f} MB')
-    print(f'Memory optimized by {(initial_memory - optimize_memory) / initial_memory * 100:.2f} %')
-
-    difference_df = df - new_df
-    difference_df = pd.concat([difference_df.mean(), difference_df.std()], axis=1)
-    difference_df.rename(columns={
-        0: 'Mean',
-        1: 'Std',
-    }, inplace=True)
-    print('Loss Statistics:')
-    print(difference_df)
-    
-    return new_df
 
 def dataset_split(X, y, reset_index=True, **kwargs):
     X_train, X_test, y_train, y_test = train_test_split(X, y, **kwargs)
