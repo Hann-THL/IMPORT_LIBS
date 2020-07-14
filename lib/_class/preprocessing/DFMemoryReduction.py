@@ -48,10 +48,11 @@ class DFMemoryReduction(BaseEstimator, TransformerMixin):
         print(f'Memory optimized by {(initial_memory - optimize_memory) / initial_memory * 100:.2f} %')
 
         difference_df = df.select_dtypes('number') - new_df.select_dtypes('number')
-        difference_df = pd.concat([difference_df.mean(), difference_df.std()], axis=1)
+        difference_df = pd.concat([difference_df.max(), difference_df.mean(), difference_df.std()], axis=1)
         difference_df.rename(columns={
-            0: 'Mean',
-            1: 'Std',
+            0: 'Max',
+            1: 'Mean',
+            2: 'Std',
         }, inplace=True)
         
         return new_df, difference_df
