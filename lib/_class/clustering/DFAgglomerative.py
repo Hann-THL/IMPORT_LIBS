@@ -46,7 +46,7 @@ class DFAgglomerative(BaseEstimator, ClusterMixin):
                 model.fit(tmp_X)
 
                 # Cluster centroid
-                self.eval_df.at[x, 'centroid'] = self.__calc_centroids(tmp_X, model.fit_predict(tmp_X))
+                self.eval_df.at[x, 'centroid'] = self.__calc_centroids(tmp_X, model.labels_)
 
                 # Reference: https://towardsdatascience.com/clustering-metrics-better-than-the-elbow-method-6926e1f723a6
                 if self.eval_silhouette:
@@ -76,7 +76,7 @@ class DFAgglomerative(BaseEstimator, ClusterMixin):
             self.centroid_df = pd.DataFrame(
                 self.__calc_centroids(
                     X[self.transform_cols],
-                    self.model.fit_predict(X[self.transform_cols])
+                    self.model.labels_
                 ),
                 columns=self.transform_cols
             )
@@ -99,7 +99,7 @@ class DFAgglomerative(BaseEstimator, ClusterMixin):
             raise NotFittedError(f"This {self.__class__.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.")
 
         new_X = X.copy()
-        new_X[self.cluster_name] = self.model.fit_predict(X[self.transform_cols])
+        new_X[self.cluster_name] = self.model.labels_
         new_X[self.cluster_name] = 'Cluster ' + new_X[self.cluster_name].astype(str)
 
         return new_X

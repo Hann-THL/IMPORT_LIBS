@@ -50,7 +50,7 @@ class DFDBSCAN(BaseEstimator, ClusterMixin):
             self.eval_df['min_samples'] = [x[1] for x in self.eps_samples_tuples]
 
             tmp_X = X[self.transform_cols].copy()
-            for index, (eps, min_samples) in tqdm(enumerate(self.eps_samples_tuples)):
+            for eps, min_samples in tqdm(self.eps_samples_tuples):
                 model = copy.deepcopy(self.model)
                 model.eps = eps
                 model.min_samples = min_samples
@@ -111,7 +111,7 @@ class DFDBSCAN(BaseEstimator, ClusterMixin):
             self.centroid_df = pd.DataFrame(
                 self.__calc_centroids(
                     X[self.transform_cols],
-                    self.model.fit_predict(X[self.transform_cols])
+                    self.model.labels_
                 ),
                 columns=self.transform_cols
             )
@@ -134,7 +134,7 @@ class DFDBSCAN(BaseEstimator, ClusterMixin):
             raise NotFittedError(f"This {self.__class__.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.")
 
         new_X = X.copy()
-        new_X[self.cluster_name] = self.model.fit_predict(X[self.transform_cols])
+        new_X[self.cluster_name] = self.model.labels_
         new_X[self.cluster_name] = 'Cluster ' + new_X[self.cluster_name].astype(str)
 
         return new_X
