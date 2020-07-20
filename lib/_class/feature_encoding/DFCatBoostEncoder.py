@@ -10,12 +10,17 @@ class DFCatBoostEncoder(BaseEstimator, TransformerMixin):
         self.transform_cols = None
         
     def fit(self, X, y):
+        return self.__fit(X, y)
+    
+    def __fit(self, X, y, fit=True):
         self.columns        = X.columns if self.columns is None else self.columns
         self.transform_cols = [x for x in X.columns if x in self.columns]
-        self.model.fit(X[self.transform_cols], y)
+
+        if fit:
+            self.model.fit(X[self.transform_cols], y)
 
         return self
-    
+
     def transform(self, X):
         return self.__transform(X)
     
@@ -33,4 +38,4 @@ class DFCatBoostEncoder(BaseEstimator, TransformerMixin):
     
     def fit_transform(self, X, y):
         # NOTE: Result of fit_transform() is different from fit() + transform()
-        return self.fit(X, y).__transform(X, y)
+        return self.__fit(X, y, fit=False).__transform(X, y)
