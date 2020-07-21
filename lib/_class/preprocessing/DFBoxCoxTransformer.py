@@ -4,13 +4,14 @@ from scipy.special import boxcox, inv_boxcox
 
 # Reference: https://www.statisticshowto.com/box-cox-transformation/
 class DFBoxCoxTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, columns, lmbda=0):
+    def __init__(self, columns=None, lmbda=0):
         self.columns        = columns
         self.lmbda          = lmbda
         self.transform_cols = None
         self.stat_df        = None
         
     def fit(self, X, y=None):
+        self.columns        = X.columns if self.columns is None else self.columns
         self.transform_cols = [x for x in X.columns if x in self.columns]
 
         # Reference: https://help.gooddata.com/doc/en/reporting-and-dashboards/maql-analytical-query-language/maql-expression-reference/aggregation-functions/statistical-functions/predictive-statistical-use-cases/normality-testing-skewness-and-kurtosis
@@ -34,8 +35,8 @@ class DFBoxCoxTransformer(BaseEstimator, TransformerMixin):
             new_X[column] = boxcox(new_X[column], self.lmbda)
 
         # Transformed skewness & kurtosis
-        skew_df      = new_X[self.transform_cols].skew().to_frame(name='Skewness (Box Cox)')
-        kurt_df      = new_X[self.transform_cols].kurt().to_frame(name='Kurtosis (Box Cox)')
+        skew_df      = new_X[self.transform_cols].skew().to_frame(name='Skewness (Transformed)')
+        kurt_df      = new_X[self.transform_cols].kurt().to_frame(name='Kurtosis (Transformed)')
         stat_df      = skew_df.merge(kurt_df, left_index=True, right_index=True, how='left')
         self.stat_df = self.stat_df.merge(stat_df, left_index=True, right_index=True, how='left')
 
