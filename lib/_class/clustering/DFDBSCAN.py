@@ -48,13 +48,21 @@ class DFDBSCAN(BaseEstimator, ClusterMixin):
             self.eval_df                = pd.DataFrame()
             self.eval_df['eps']         = [x[0] for x in self.eps_samples_tuples]
             self.eval_df['min_samples'] = [x[1] for x in self.eps_samples_tuples]
+            self.eval_df['centroid']    = self.eval_df['eps'].apply(lambda x: [])
 
             tmp_X = X[self.transform_cols].copy()
+            index = 0
             for eps, min_samples in tqdm(self.eps_samples_tuples):
                 model = copy.deepcopy(self.model)
                 model.eps = eps
                 model.min_samples = min_samples
                 model.fit(tmp_X)
+
+                # Cluster centroid
+                # Exclude calculating centroid of noise cluster
+                tmp_df = pd.concat([tmp_X, pd.Series(model.labels_, name='Cluster')], axis=1)
+                tmp_df = tmp_df[tmp_df['Cluster'] != -1].reset_index(drop=True)
+                self.eval_df.at[index, 'centroid'] = self.__calc_centroids(tmp_df[self.transform_cols], tmp_df['Cluster'])
 
                 tmp_X2  = tmp_X.copy()
                 tmp_X2  = pd.concat([tmp_X2, pd.Series(model.labels_, name='Cluster')], axis=1)
@@ -88,6 +96,8 @@ class DFDBSCAN(BaseEstimator, ClusterMixin):
                     dbis1.append(np.nan if n_cluster <= 1 else davies_bouldin_score(tmp_X, model.labels_))
                     dbis2.append(np.nan if n_cluster2 <= 1 else davies_bouldin_score(tmp_X2, labels2))
 
+                index += 1
+
             if self.eval_cluster:
                 self.eval_df['n_cluster'] = n_clusters
                 self.eval_df['n_noise']   = n_noises
@@ -108,14 +118,18 @@ class DFDBSCAN(BaseEstimator, ClusterMixin):
         else:
             self.model.fit(X[self.transform_cols])
 
+            # Exclude calculating centroid of noise cluster
+            tmp_df = pd.concat([X[self.transform_cols], pd.Series(self.model.labels_, name='Cluster')], axis=1)
+            tmp_df = tmp_df[tmp_df['Cluster'] != -1].reset_index(drop=True)
+
             self.centroid_df = pd.DataFrame(
                 self.__calc_centroids(
-                    X[self.transform_cols],
-                    self.model.labels_
+                    tmp_df[self.transform_cols],
+                    tmp_df['Cluster']
                 ),
                 columns=self.transform_cols
             )
-            self.centroid_df['Cluster'] = [f'Cluster {x}' for x in np.unique(self.model.labels_)]
+            self.centroid_df['Cluster'] = [f'Cluster {x}' for x in np.unique(self.model.labels_) if x != -1]
             self.centroid_df.set_index('Cluster', inplace=True)
             self.centroid_df.index.name = None
 

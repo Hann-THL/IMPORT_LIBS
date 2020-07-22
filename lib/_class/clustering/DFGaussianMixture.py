@@ -38,21 +38,22 @@ class DFGaussianMixture(BaseEstimator, ClusterMixin):
             dbis        = []
 
             self.eval_df = pd.DataFrame({
-                'n_cluster': [x+1 for x in range(self.model.n_components)]
+                'n_cluster': [x+1 for x in range(1, self.model.n_components)]
             })
             self.eval_df['centroid']  = self.eval_df['n_cluster'].apply(lambda x: [])
-            self.eval_df['converged'] = [None for _ in range(self.model.n_components)]
+            self.eval_df['converged'] = [None for _ in self.eval_df['n_cluster'].values]
 
             tmp_X = X[self.transform_cols].copy()
-            for x in tqdm(range(self.model.n_components)):
+            index = 0
+            for n_cluster in tqdm(self.eval_df['n_cluster'].values):
                 model = copy.deepcopy(self.model)
-                model.n_components = x+1
+                model.n_components = n_cluster
                 model.fit(tmp_X)
 
-                self.eval_df.at[x, 'converged'] = model.converged_
+                self.eval_df.at[index, 'converged'] = model.converged_
 
                 # Cluster centroid
-                self.eval_df.at[x, 'centroid'] = self.__calc_centroids(model, tmp_X)
+                self.eval_df.at[index, 'centroid'] = self.__calc_centroids(model, tmp_X)
 
                 # Reference: https://jakevdp.github.io/PythonDataScienceHandbook/05.12-gaussian-mixtures.html
                 if self.eval_aic:
@@ -63,15 +64,17 @@ class DFGaussianMixture(BaseEstimator, ClusterMixin):
 
                 # Reference: https://towardsdatascience.com/clustering-metrics-better-than-the-elbow-method-6926e1f723a6
                 if self.eval_silhouette:
-                    silhouettes.append(np.nan if x == 0 else silhouette_score(tmp_X, model.predict(tmp_X), sample_size=self.eval_sample_size, metric='euclidean', random_state=model.random_state))
+                    silhouettes.append(np.nan if n_cluster <= 1 else silhouette_score(tmp_X, model.predict(tmp_X), sample_size=self.eval_sample_size, metric='euclidean', random_state=model.random_state))
 
                 # Reference: https://stats.stackexchange.com/questions/52838/what-is-an-acceptable-value-of-the-calinski-harabasz-ch-criterion
                 if self.eval_chi:
-                    chis.append(np.nan if x == 0 else calinski_harabasz_score(tmp_X, model.predict(tmp_X)))
+                    chis.append(np.nan if n_cluster <= 1 else calinski_harabasz_score(tmp_X, model.predict(tmp_X)))
 
                 # Reference: https://stackoverflow.com/questions/59279056/davies-bouldin-index-higher-or-lower-score-better
                 if self.eval_dbi:
-                    dbis.append(np.nan if x == 0 else davies_bouldin_score(tmp_X, model.predict(tmp_X)))
+                    dbis.append(np.nan if n_cluster <= 1 else davies_bouldin_score(tmp_X, model.predict(tmp_X)))
+
+                index += 1
 
             if self.eval_aic:
                 self.eval_df['akaike'] = aics

@@ -36,18 +36,19 @@ class DFKMeans(BaseEstimator, ClusterMixin):
             dbis        = []
 
             self.eval_df = pd.DataFrame({
-                'n_cluster': [x+1 for x in range(self.model.n_clusters)],
+                'n_cluster': [x+1 for x in range(1, self.model.n_clusters)],
             })
             self.eval_df['centroid'] = self.eval_df['n_cluster'].apply(lambda x: [])
 
             tmp_X = X[self.transform_cols].copy()
-            for x in tqdm(range(self.model.n_clusters)):
+            index = 0
+            for n_cluster in tqdm(self.eval_df['n_cluster'].values):
                 model = copy.deepcopy(self.model)
-                model.n_clusters = x+1
+                model.n_clusters = n_cluster
                 model.fit(tmp_X)
 
                 # Cluster centroid
-                self.eval_df.at[x, 'centroid'] = model.cluster_centers_
+                self.eval_df.at[index, 'centroid'] = model.cluster_centers_
 
                 # Reference: https://blog.cambridgespark.com/how-to-determine-the-optimal-number-of-clusters-for-k-means-clustering-14f27070048f
                 if self.eval_inertia:
@@ -55,15 +56,17 @@ class DFKMeans(BaseEstimator, ClusterMixin):
 
                 # Reference: https://towardsdatascience.com/clustering-metrics-better-than-the-elbow-method-6926e1f723a6
                 if self.eval_silhouette:
-                    silhouettes.append(np.nan if x == 0 else silhouette_score(tmp_X, model.labels_, sample_size=self.eval_sample_size, metric='euclidean', random_state=model.random_state))
+                    silhouettes.append(np.nan if n_cluster <= 1 else silhouette_score(tmp_X, model.labels_, sample_size=self.eval_sample_size, metric='euclidean', random_state=model.random_state))
 
                 # Reference: https://stats.stackexchange.com/questions/52838/what-is-an-acceptable-value-of-the-calinski-harabasz-ch-criterion
                 if self.eval_chi:
-                    chis.append(np.nan if x == 0 else calinski_harabasz_score(tmp_X, model.labels_))
+                    chis.append(np.nan if n_cluster <= 1 else calinski_harabasz_score(tmp_X, model.labels_))
 
                 # Reference: https://stackoverflow.com/questions/59279056/davies-bouldin-index-higher-or-lower-score-better
                 if self.eval_dbi:
-                    dbis.append(np.nan if x == 0 else davies_bouldin_score(tmp_X, model.labels_))
+                    dbis.append(np.nan if n_cluster <= 1 else davies_bouldin_score(tmp_X, model.labels_))
+
+                index += 1
 
             if self.eval_inertia:
                 self.eval_df['inertia'] = inertias

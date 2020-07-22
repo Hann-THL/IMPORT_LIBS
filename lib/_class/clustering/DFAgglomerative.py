@@ -10,12 +10,16 @@ import copy
 
 class DFAgglomerative(BaseEstimator, ClusterMixin):
     def __init__(self, cluster_name='Agglo', columns=None, random_state=None,
-                 eval_silhouette=False, eval_chi=False, eval_dbi=False, eval_sample_size=None,
+                 clusters=None, eval_silhouette=False, eval_chi=False, eval_dbi=False, eval_sample_size=None,
                  **kwargs):
+        if any([eval_silhouette, eval_chi, eval_dbi]):
+            assert clusters is not None, 'clusters should consists of [n_cluster] for Agglomerative evaluation.'
+
         self.cluster_name     = cluster_name
         self.columns          = columns
         self.random_state     = random_state
         self.model            = AgglomerativeClustering(**kwargs)
+        self.clusters         = clusters
         self.eval_silhouette  = eval_silhouette
         self.eval_chi         = eval_chi
         self.eval_dbi         = eval_dbi
@@ -35,30 +39,33 @@ class DFAgglomerative(BaseEstimator, ClusterMixin):
             dbis        = []
 
             self.eval_df = pd.DataFrame({
-                'n_cluster': [x+1 for x in range(self.model.n_clusters)],
+                'n_cluster': self.clusters,
             })
             self.eval_df['centroid'] = self.eval_df['n_cluster'].apply(lambda x: [])
 
             tmp_X = X[self.transform_cols].copy()
-            for x in tqdm(range(self.model.n_clusters)):
+            index = 0
+            for n_cluster in tqdm(self.eval_df['n_cluster'].values):
                 model = copy.deepcopy(self.model)
-                model.n_clusters = x+1
+                model.n_clusters = n_cluster
                 model.fit(tmp_X)
 
                 # Cluster centroid
-                self.eval_df.at[x, 'centroid'] = self.__calc_centroids(tmp_X, model.labels_)
+                self.eval_df.at[index, 'centroid'] = self.__calc_centroids(tmp_X, model.labels_)
 
                 # Reference: https://towardsdatascience.com/clustering-metrics-better-than-the-elbow-method-6926e1f723a6
                 if self.eval_silhouette:
-                    silhouettes.append(np.nan if x == 0 else silhouette_score(tmp_X, model.labels_, sample_size=self.eval_sample_size, metric='euclidean', random_state=self.random_state))
+                    silhouettes.append(np.nan if n_cluster <= 1 else silhouette_score(tmp_X, model.labels_, sample_size=self.eval_sample_size, metric='euclidean', random_state=self.random_state))
 
                 # Reference: https://stats.stackexchange.com/questions/52838/what-is-an-acceptable-value-of-the-calinski-harabasz-ch-criterion
                 if self.eval_chi:
-                    chis.append(np.nan if x == 0 else calinski_harabasz_score(tmp_X, model.labels_))
+                    chis.append(np.nan if n_cluster <= 1 else calinski_harabasz_score(tmp_X, model.labels_))
 
                 # Reference: https://stackoverflow.com/questions/59279056/davies-bouldin-index-higher-or-lower-score-better
                 if self.eval_dbi:
-                    dbis.append(np.nan if x == 0 else davies_bouldin_score(tmp_X, model.labels_))
+                    dbis.append(np.nan if n_cluster <= 1 else davies_bouldin_score(tmp_X, model.labels_))
+
+                index += 1
 
             if self.eval_silhouette:
                 self.eval_df['silhouette'] = silhouettes

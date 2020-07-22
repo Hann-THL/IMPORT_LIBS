@@ -8,7 +8,7 @@ import numpy as np
 import copy
 
 class DFMeanShift(BaseEstimator, ClusterMixin):
-    def __init__(self, cluster_name='DFMeanShift', columns=None, random_state=None,
+    def __init__(self, cluster_name='MeanShift', columns=None, random_state=None,
                  bandwidths=None, eval_cluster=False, eval_silhouette=False, eval_chi=False, eval_dbi=False, eval_sample_size=None,
                  **kwargs):
         if any([eval_cluster, eval_silhouette, eval_chi, eval_dbi]):
@@ -45,12 +45,17 @@ class DFMeanShift(BaseEstimator, ClusterMixin):
 
             self.eval_df              = pd.DataFrame()
             self.eval_df['bandwidth'] = self.bandwidths
+            self.eval_df['centroid']  = self.eval_df['bandwidth'].apply(lambda x: [])
 
             tmp_X = X[self.transform_cols].copy()
+            index = 0
             for bandwidth in tqdm(self.bandwidths):
                 model = copy.deepcopy(self.model)
                 model.bandwidth = bandwidth
                 model.fit(tmp_X)
+
+                # Cluster centroid
+                self.eval_df.at[index, 'centroid'] = model.cluster_centers_
 
                 tmp_X2  = tmp_X.copy()
                 tmp_X2  = pd.concat([tmp_X2, pd.Series(model.labels_, name='Cluster')], axis=1)
@@ -84,6 +89,8 @@ class DFMeanShift(BaseEstimator, ClusterMixin):
                     dbis1.append(np.nan if n_cluster <= 1 else davies_bouldin_score(tmp_X, model.labels_))
                     dbis2.append(np.nan if n_cluster2 <= 1 else davies_bouldin_score(tmp_X2, labels2))
 
+                index += 1
+
             if self.eval_cluster:
                 self.eval_df['n_cluster'] = n_clusters
                 self.eval_df['n_noise']   = n_noises
@@ -108,22 +115,21 @@ class DFMeanShift(BaseEstimator, ClusterMixin):
                 self.model.cluster_centers_,
                 columns=self.transform_cols
             )
-            self.centroid_df['Cluster'] = [f'Cluster {x}' for x in np.unique(self.model.labels_)]
+            self.centroid_df['Cluster'] = [f'Cluster {x}' for x in np.unique(self.model.labels_) if x != -1]
             self.centroid_df.set_index('Cluster', inplace=True)
             self.centroid_df.index.name = None
 
         return self
     
-    # NOTE: MeanShift does not have predict()
-    def __predict(self, X):
+    def predict(self, X):
         if self.transform_cols is None:
             raise NotFittedError(f"This {self.__class__.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.")
 
         new_X = X.copy()
-        new_X[self.cluster_name] = self.model.labels_
+        new_X[self.cluster_name] = self.model.predict(X[self.transform_cols])
         new_X[self.cluster_name] = 'Cluster ' + new_X[self.cluster_name].astype(str)
 
         return new_X
     
     def fit_predict(self, X, y=None):
-        return self.fit(X).__predict(X)
+        return self.fit(X).predict(X)
